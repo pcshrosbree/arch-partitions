@@ -64,7 +64,7 @@ ULTRA_PERF_MODEL=$(smartctl -i "$NVME_ULTRA_PERF" 2>/dev/null | grep "Model Numb
 
 log "Detected drives:"
 log "  $NVME_HIGH_PERF: $HIGH_PERF_MODEL (Root system - unencrypted)"
-log "  $NVME_ULTRA_PERF: $ULTRA_PERF_MODEL (Home - encrypted)"
+log "  $NVME_ULTRA_PERF: $ULTRA_PERF_MODEL (Workspace + Home - encrypted)"
 log "  $SATA_SSD: SATA SSD (Swap - unencrypted)"
 
 # Confirmation prompt
@@ -112,10 +112,12 @@ parted -s "$NVME_HIGH_PERF" set 1 esp on
 # Root partition (remaining space)
 parted -s "$NVME_HIGH_PERF" mkpart "arch-root" btrfs 1025MiB 100%
 
-# Partition Samsung SSD 9100 PRO (Home - encrypted)
+# Partition Samsung SSD 9100 PRO (Workspace + Home - encrypted)
 log "Partitioning Samsung SSD 9100 PRO ($NVME_ULTRA_PERF) for encryption"
-# Home directory (full drive - will be encrypted)
-parted -s "$NVME_ULTRA_PERF" mkpart "arch-home-crypt" btrfs 1MiB 100%
+# Development workspace (1TB - will be encrypted)
+parted -s "$NVME_ULTRA_PERF" mkpart "arch-workspace-crypt" btrfs 1MiB 1025GiB
+# Home directory (remaining ~3TB - will be encrypted)
+parted -s "$NVME_ULTRA_PERF" mkpart "arch-home-crypt" btrfs 1025GiB 100%
 
 # Partition SATA SSD (Swap - unencrypted)
 log "Partitioning SATA SSD ($SATA_SSD)"
@@ -141,12 +143,12 @@ log "Setting up swap"
 mkswap -L "arch-swap" "${SATA_SSD}1"
 
 # Setup LUKS encryption for Samsung SSD 9100 PRO
-log "Setting up LUKS encryption for Samsung SSD 9100 PRO home partition"
+log "Setting up LUKS encryption for Samsung SSD 9100 PRO partitions"
 
-# Encrypt home directory
-log "Creating encrypted container for home directory"
+# Encrypt development workspace
+log "Creating encrypted container for development workspace"
 echo
-echo -e "${BLUE}You will be prompted to enter a passphrase for the encrypted home directory.${NC}"
+echo -e "${BLUE}You will be prompted to enter a passphrase for the encrypted workspace.${NC}"
 echo -e "${BLUE}Choose a strong passphrase and remember it - you'll need it every boot.${NC}"
 echo
 cryptsetup luksFormat --type luks2 \
@@ -157,8 +159,37 @@ cryptsetup luksFormat --type luks2 \
     --verify-passphrase \
     "${NVME_ULTRA_PERF}p1"
 
+log "Opening encrypted workspace"
+cryptsetup open "${NVME_ULTRA_PERF}p1" workspace_encrypted
+
+# Format encrypted workspace filesystem with Samsung SSD 9100 PRO optimizations
+log "Creating btrfs filesystem on encrypted workspace partition"
+mkfs.btrfs -f -L "arch-workspace-encrypted" \
+    --csum xxhash \
+    --features skinny-metadata,no-holes \
+    --nodesize 16384 \
+    /dev/mapper/workspace_encrypted
+
+# Close workspace device
+log "Closing encrypted workspace device"
+cryptsetup close workspace_encrypted
+
+# Encrypt home directory
+log "Creating encrypted container for home directory"
+echo
+echo -e "${BLUE}You will be prompted to enter a passphrase for the encrypted home directory.${NC}"
+echo -e "${BLUE}This can be the same or different from the workspace passphrase.${NC}"
+echo
+cryptsetup luksFormat --type luks2 \
+    --cipher aes-xts-plain64 \
+    --key-size 512 \
+    --hash sha256 \
+    --use-random \
+    --verify-passphrase \
+    "${NVME_ULTRA_PERF}p2"
+
 log "Opening encrypted home directory"
-cryptsetup open "${NVME_ULTRA_PERF}p1" home_encrypted
+cryptsetup open "${NVME_ULTRA_PERF}p2" home_encrypted
 
 # Format encrypted home filesystem with Samsung SSD 9100 PRO optimizations
 log "Creating btrfs filesystem on encrypted home partition"
@@ -169,7 +200,7 @@ mkfs.btrfs -f -L "arch-home-encrypted" \
     /dev/mapper/home_encrypted
 
 # Close encrypted device for now (archinstall will handle opening)
-log "Closing encrypted device (archinstall will reopen it)"
+log "Closing encrypted devices (archinstall will reopen them)"
 cryptsetup close home_encrypted
 
 # Display final configuration
@@ -179,7 +210,8 @@ log "🎯 ARCHINSTALL-READY CONFIGURATION:"
 log "=================================================="
 log "EFI partition: ${NVME_HIGH_PERF}p1 (FAT32, ESP label, 1GB)"
 log "Root partition: ${NVME_HIGH_PERF}p2 (btrfs, arch-root label, unencrypted)"
-log "Home partition: ${NVME_ULTRA_PERF}p1 (LUKS encrypted btrfs, arch-home-encrypted label)"
+log "Workspace partition: ${NVME_ULTRA_PERF}p1 (LUKS encrypted btrfs, arch-workspace-encrypted label, 1TB)"
+log "Home partition: ${NVME_ULTRA_PERF}p2 (LUKS encrypted btrfs, arch-home-encrypted label, ~3TB)"
 log "Swap partition: ${SATA_SSD}1 (swap, arch-swap label)"
 echo
 log "🔐 ENCRYPTION DETAILS:"
@@ -194,9 +226,10 @@ log "2. Select 'Use existing partitions'"
 log "3. Configure partitions:"
 log "   - ${NVME_HIGH_PERF}p1 → /boot (EFI)"
 log "   - ${NVME_HIGH_PERF}p2 → / (root)"
-log "   - ${NVME_ULTRA_PERF}p1 → /home (encrypted)"
+log "   - ${NVME_ULTRA_PERF}p1 → /workspace (encrypted)"
+log "   - ${NVME_ULTRA_PERF}p2 → /home (encrypted)"
 log "   - ${SATA_SSD}1 → swap"
-log "4. archinstall will prompt for encryption passphrase"
+log "4. archinstall will prompt for encryption passphrases"
 log "5. Complete installation normally"
 echo
 warning "⚠️  IMPORTANT NOTES:"
@@ -214,7 +247,10 @@ lsblk
 
 echo
 log "LUKS devices:"
-cryptsetup luksDump "${NVME_ULTRA_PERF}p1" | head -10
+log "Workspace encryption:"
+cryptsetup luksDump "${NVME_ULTRA_PERF}p1" | head -5
+log "Home encryption:"
+cryptsetup luksDump "${NVME_ULTRA_PERF}p2" | head -5
 
 echo
 log "Disk preparation complete! Ready for archinstall."
