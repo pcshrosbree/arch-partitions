@@ -65,7 +65,7 @@ ULTRA_PERF_MODEL=$(smartctl -i "$NVME_ULTRA_PERF" 2>/dev/null | grep "Model Numb
 log "Detected drives:"
 log "  $NVME_HIGH_PERF: $HIGH_PERF_MODEL (Root system - unencrypted)"
 log "  $NVME_ULTRA_PERF: $ULTRA_PERF_MODEL (Workspace + Home - encrypted)"
-log "  $SATA_SSD: SATA SSD (Swap - unencrypted)"
+log "  $SATA_SSD: SATA SSD (Swap + Cache - unencrypted)"
 
 # Confirmation prompt
 echo
@@ -119,10 +119,12 @@ parted -s "$NVME_ULTRA_PERF" mkpart "arch-workspace-crypt" btrfs 1MiB 1025GiB
 # Home directory (remaining ~3TB - will be encrypted)
 parted -s "$NVME_ULTRA_PERF" mkpart "arch-home-crypt" btrfs 1025GiB 100%
 
-# Partition SATA SSD (Swap - unencrypted)
+# Partition SATA SSD (Swap and cache - unencrypted)
 log "Partitioning SATA SSD ($SATA_SSD)"
-# Swap partition (full drive)
-parted -s "$SATA_SSD" mkpart "arch-swap" linux-swap 1MiB 100%
+# Swap partition (32GB)
+parted -s "$SATA_SSD" mkpart "arch-swap" linux-swap 1MiB 32GiB
+# Cache partition (remaining space)
+parted -s "$SATA_SSD" mkpart "arch-cache" btrfs 32GiB 100%
 
 # Wait for partition devices to be available
 sleep 3
@@ -131,16 +133,38 @@ sleep 3
 log "Formatting EFI partition"
 mkfs.fat -F32 -n "ESP" "${NVME_HIGH_PERF}p1"
 
-# Format root filesystem (unencrypted)
-log "Formatting root filesystem (unencrypted)"
+# Create and mount root filesystem temporarily for subvolumes
+log "Creating root filesystem with btrfs subvolumes"
 mkfs.btrfs -f -L "arch-root" \
     --csum xxhash \
     --features skinny-metadata,no-holes \
     "${NVME_HIGH_PERF}p2"
 
-# Format and enable swap
+# Mount root temporarily to create subvolumes
+log "Creating btrfs subvolumes for optimal management"
+mount -o noatime,compress=zstd:1,space_cache=v2,discard=async "${NVME_HIGH_PERF}p2" /mnt
+
+# Create btrfs subvolumes
+btrfs subvolume create /mnt/@
+btrfs subvolume create /mnt/@var
+btrfs subvolume create /mnt/@var_log
+btrfs subvolume create /mnt/@var_cache
+btrfs subvolume create /mnt/@tmp
+btrfs subvolume create /mnt/@.snapshots
+
+# Unmount root (archinstall will handle proper mounting)
+log "Unmounting root filesystem (archinstall will remount with subvolumes)"
+umount /mnt
+
+# Format swap and cache partitions
 log "Setting up swap"
-mkswap -L "arch-swap" "${SATA_SSD}1"
+mkswap -L "arch-swap" "${SATA_SSD}p1"
+
+log "Formatting cache filesystem"
+mkfs.btrfs -f -L "arch-cache" \
+    --csum xxhash \
+    --features skinny-metadata,no-holes \
+    "${SATA_SSD}p2"
 
 # Setup LUKS encryption for Samsung SSD 9100 PRO
 log "Setting up LUKS encryption for Samsung SSD 9100 PRO partitions"
@@ -212,7 +236,8 @@ log "EFI partition: ${NVME_HIGH_PERF}p1 (FAT32, ESP label, 1GB)"
 log "Root partition: ${NVME_HIGH_PERF}p2 (btrfs, arch-root label, unencrypted)"
 log "Workspace partition: ${NVME_ULTRA_PERF}p1 (LUKS encrypted btrfs, arch-workspace-encrypted label, 1TB)"
 log "Home partition: ${NVME_ULTRA_PERF}p2 (LUKS encrypted btrfs, arch-home-encrypted label, ~3TB)"
-log "Swap partition: ${SATA_SSD}1 (swap, arch-swap label)"
+log "Swap partition: ${SATA_SSD}p1 (swap, arch-swap label, 32GB)"
+log "Cache partition: ${SATA_SSD}p2 (btrfs, arch-cache label, unencrypted)"
 echo
 log "🔐 ENCRYPTION DETAILS:"
 log "- Home directory encrypted with LUKS2 AES-256-XTS"
@@ -228,7 +253,8 @@ log "   - ${NVME_HIGH_PERF}p1 → /boot (EFI)"
 log "   - ${NVME_HIGH_PERF}p2 → / (root)"
 log "   - ${NVME_ULTRA_PERF}p1 → /workspace (encrypted)"
 log "   - ${NVME_ULTRA_PERF}p2 → /home (encrypted)"
-log "   - ${SATA_SSD}1 → swap"
+log "   - ${SATA_SSD}p1 → swap"
+log "   - ${SATA_SSD}p2 → /.cache (cache directory)"
 log "4. archinstall will prompt for encryption passphrases"
 log "5. Complete installation normally"
 echo
