@@ -86,7 +86,7 @@ fi
 
 # Install required tools
 log "Installing required tools"
-pacman -Sy --noconfirm cryptsetup parted dosfstools
+pacman -Sy --noconfirm cryptsetup parted dosfstools btrfs-progs
 
 # Enable NTP for accurate time
 log "Synchronizing system clock"
@@ -107,35 +107,38 @@ parted -s "$SATA_SSD" mklabel gpt
 # Partition High Performance NVMe (Root system - unencrypted)
 log "Partitioning root drive ($NVME_HIGH_PERF) for archinstall"
 # EFI System Partition (1GB)
-parted -s "$NVME_HIGH_PERF" mkpart "EFI" fat32 1MiB 1025MiB
+parted -s "$NVME_HIGH_PERF" mkpart "ESP" fat32 1MiB 1025MiB
 parted -s "$NVME_HIGH_PERF" set 1 esp on
 # Root partition (remaining space)
-parted -s "$NVME_HIGH_PERF" mkpart "ROOT" ext4 1025MiB 100%
+parted -s "$NVME_HIGH_PERF" mkpart "arch-root" btrfs 1025MiB 100%
 
 # Partition Samsung SSD 9100 PRO (Home - encrypted)
 log "Partitioning Samsung SSD 9100 PRO ($NVME_ULTRA_PERF) for encryption"
 # Home directory (full drive - will be encrypted)
-parted -s "$NVME_ULTRA_PERF" mkpart "HOME_CRYPT" ext4 1MiB 100%
+parted -s "$NVME_ULTRA_PERF" mkpart "arch-home-crypt" btrfs 1MiB 100%
 
 # Partition SATA SSD (Swap - unencrypted)
 log "Partitioning SATA SSD ($SATA_SSD)"
 # Swap partition (full drive)
-parted -s "$SATA_SSD" mkpart "SWAP" linux-swap 1MiB 100%
+parted -s "$SATA_SSD" mkpart "arch-swap" linux-swap 1MiB 100%
 
 # Wait for partition devices to be available
 sleep 3
 
 # Format EFI partition
 log "Formatting EFI partition"
-mkfs.fat -F32 "${NVME_HIGH_PERF}p1"
+mkfs.fat -F32 -n "ESP" "${NVME_HIGH_PERF}p1"
 
 # Format root filesystem (unencrypted)
 log "Formatting root filesystem (unencrypted)"
-mkfs.ext4 -F "${NVME_HIGH_PERF}p2"
+mkfs.btrfs -f -L "arch-root" \
+    --csum xxhash \
+    --features skinny-metadata,no-holes \
+    "${NVME_HIGH_PERF}p2"
 
 # Format and enable swap
 log "Setting up swap"
-mkswap "${SATA_SSD}p1"
+mkswap -L "arch-swap" "${SATA_SSD}1"
 
 # Setup LUKS encryption for Samsung SSD 9100 PRO
 log "Setting up LUKS encryption for Samsung SSD 9100 PRO home partition"
@@ -157,9 +160,13 @@ cryptsetup luksFormat --type luks2 \
 log "Opening encrypted home directory"
 cryptsetup open "${NVME_ULTRA_PERF}p1" home_encrypted
 
-# Format encrypted home filesystem
-log "Creating filesystem on encrypted home partition"
-mkfs.ext4 -F /dev/mapper/home_encrypted
+# Format encrypted home filesystem with Samsung SSD 9100 PRO optimizations
+log "Creating btrfs filesystem on encrypted home partition"
+mkfs.btrfs -f -L "arch-home-encrypted" \
+    --csum xxhash \
+    --features skinny-metadata,no-holes \
+    --nodesize 16384 \
+    /dev/mapper/home_encrypted
 
 # Close encrypted device for now (archinstall will handle opening)
 log "Closing encrypted device (archinstall will reopen it)"
@@ -170,14 +177,15 @@ log "Disk preparation completed successfully!"
 echo
 log "🎯 ARCHINSTALL-READY CONFIGURATION:"
 log "=================================================="
-log "EFI partition: ${NVME_HIGH_PERF}p1 (FAT32, 1GB)"
-log "Root partition: ${NVME_HIGH_PERF}p2 (ext4, unencrypted)"
-log "Home partition: ${NVME_ULTRA_PERF}p1 (LUKS encrypted ext4)"
-log "Swap partition: ${SATA_SSD}p1 (swap)"
+log "EFI partition: ${NVME_HIGH_PERF}p1 (FAT32, ESP label, 1GB)"
+log "Root partition: ${NVME_HIGH_PERF}p2 (btrfs, arch-root label, unencrypted)"
+log "Home partition: ${NVME_ULTRA_PERF}p1 (LUKS encrypted btrfs, arch-home-encrypted label)"
+log "Swap partition: ${SATA_SSD}1 (swap, arch-swap label)"
 echo
 log "🔐 ENCRYPTION DETAILS:"
 log "- Home directory encrypted with LUKS2 AES-256-XTS"
-log "- Root system unencrypted for fast boot"
+log "- Root system unencrypted btrfs for fast boot and snapshots"
+log "- Samsung SSD 9100 PRO optimized btrfs (nodesize=16384)"
 log "- archinstall will detect and configure encrypted home"
 echo
 log "📋 NEXT STEPS:"
@@ -187,15 +195,16 @@ log "3. Configure partitions:"
 log "   - ${NVME_HIGH_PERF}p1 → /boot (EFI)"
 log "   - ${NVME_HIGH_PERF}p2 → / (root)"
 log "   - ${NVME_ULTRA_PERF}p1 → /home (encrypted)"
-log "   - ${SATA_SSD}p1 → swap"
+log "   - ${SATA_SSD}1 → swap"
 log "4. archinstall will prompt for encryption passphrase"
 log "5. Complete installation normally"
 echo
 warning "⚠️  IMPORTANT NOTES:"
 warning "- Remember your encryption passphrase!"
 warning "- archinstall will automatically configure encrypted home"
-warning "- The Samsung SSD 9100 PRO is optimized for performance"
-warning "- You can customize filesystem options in archinstall if desired"
+warning "- Samsung SSD 9100 PRO uses optimized btrfs settings"
+warning "- Root btrfs enables snapshots and compression"
+warning "- All partitions have descriptive labels for easy identification"
 
 # Verify setup
 log "Verifying disk setup..."
