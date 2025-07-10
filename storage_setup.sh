@@ -213,6 +213,7 @@ setup_mounts() {
     mkdir -p /mnt/target/var/cache/pyenv
     mkdir -p /mnt/target/var/cache/poetry
     mkdir -p /mnt/target/var/cache/uv
+    mkdir -p /mnt/target/var/cache/dotnet
     
     # Get UUIDs
     ROOT_UUID=$(blkid -s UUID -o value "${PRIMARY_NVME}p2")
@@ -267,6 +268,8 @@ setup_mounts() {
         "${SECONDARY_NVME}p1" /mnt/target/var/cache/poetry
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@uv_cache \
         "${SECONDARY_NVME}p1" /mnt/target/var/cache/uv
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@dotnet_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/dotnet
     
     # Bulk storage
     mount -o defaults,noatime,compress=zstd:6,space_cache=v2,ssd,discard=async \
@@ -305,6 +308,7 @@ UUID=$HOME_UUID /var/cache/maven btrfs defaults,noatime,space_cache=v2,ssd,ssd_s
 UUID=$HOME_UUID /var/cache/pyenv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@pyenv_cache 0 0
 UUID=$HOME_UUID /var/cache/poetry btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@poetry_cache 0 0
 UUID=$HOME_UUID /var/cache/uv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@uv_cache 0 0
+UUID=$HOME_UUID /var/cache/dotnet btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@dotnet_cache 0 0
 
 # Bulk storage (BULK)
 UUID=$BULK_UUID /mnt/bulk btrfs defaults,noatime,compress=zstd:6,space_cache=v2,ssd,discard=async 0 2

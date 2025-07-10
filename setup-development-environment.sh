@@ -359,6 +359,19 @@ export POETRY_VENV_IN_PROJECT=true
 # uv configuration for ultra-fast Python packages
 export UV_CACHE_DIR="/var/cache/uv/$(whoami)"
 
+# .NET development optimizations
+export DOTNET_ROOT="/var/cache/dotnet/$(whoami)/dotnet"
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
+export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+export NUGET_PACKAGES="/var/cache/dotnet/$(whoami)/packages"
+export DOTNET_NUGET_SIGNATURE_VERIFICATION=false
+export DOTNET_CLI_HOME="/var/cache/dotnet/$(whoami)/cli"
+
+# .NET performance optimizations for large memory systems
+export DOTNET_GCHeapCount=4
+export DOTNET_GCConcurrent=1
+export DOTNET_GCServer=1
+
 # Container development with Podman
 export CONTAINER_RUNTIME="podman"
 export BUILDAH_FORMAT="docker"
@@ -375,6 +388,7 @@ echo "  - Parallel jobs: $(nproc)"
 echo "  - Node.js memory: 16GB"
 echo "  - JVM memory: 32GB"
 echo "  - Python tools: pyenv, poetry, uv (optimized caches)"
+echo "  - .NET tools: dotnet, nuget (optimized caches)"
 echo "  - Container runtime: ${CONTAINER_RUNTIME}"
 echo "  - Temp directory: ${TMPDIR:-/tmp}"
 BUILDEOF
@@ -410,6 +424,10 @@ setup_cache_links "maven" "$USER_HOME/.m2"
 setup_cache_links "pyenv" "$USER_HOME/.pyenv/cache"
 setup_cache_links "poetry" "$USER_HOME/.cache/pypoetry"  
 setup_cache_links "uv" "$USER_HOME/.cache/uv"
+
+# .NET development caches
+setup_cache_links "dotnet" "$USER_HOME/.dotnet"
+setup_cache_links "dotnet" "$USER_HOME/.nuget/packages"
 
 # Setup Podman aliases
 setup_podman_aliases
@@ -1181,12 +1199,16 @@ show_summary() {
     echo "✓ Triple Dell U4320Q 4K display optimizations configured"
     echo "✓ Logitech MX Master 3S mouse optimizations configured"
     echo "✓ NVMe health monitoring enabled (hourly checks)"
+    echo "✓ Development font installation script created"
+    echo "✓ Ghostty terminal installation script created"
     echo "✓ Podman optimization configuration created"
     echo "✓ Btrfs maintenance service enabled (weekly)"
     echo "✓ Development environment optimizations created"
     echo "✓ Backup script created: /usr/local/bin/dev-backup.sh"
     echo "✓ Monitoring script created: /usr/local/bin/snapshot-monitor.sh"
     echo "✓ NVMe health monitor: /usr/local/bin/nvme-health-monitor.sh"
+    echo "✓ Ghostty installation script: /usr/local/bin/install-ghostty.sh"
+    echo "✓ Font installation script: /usr/local/bin/install-dev-fonts.sh"
     echo "✓ Mouse optimization script: /usr/local/bin/mouse-optimizer.sh"
     echo "✓ Display optimization script: /usr/local/bin/display-optimizer.sh"
     echo "✓ Memory optimization script: /usr/local/bin/memory-optimizer.sh"
@@ -1200,7 +1222,11 @@ show_summary() {
     echo "• Create pre-deploy snapshot: dev-backup.sh predeploy myapp v1.2.3"
     echo "• List all snapshots: dev-backup.sh list"
     echo "• Monitor snapshot usage: snapshot-monitor.sh status"
-    echo "• Check mouse configuration: mouse-optimizer.sh status"
+    echo "• Install Ghostty terminal: install-ghostty.sh install"
+    echo "• Configure Ghostty only: install-ghostty.sh configure"
+    echo "• Install development fonts: install-dev-fonts.sh install"
+    echo "• List installed fonts: install-dev-fonts.sh list"
+    echo "• Install MonoLisa only: install-dev-fonts.sh monolisa"
     echo "• Optimize mouse for triple 4K: mouse-optimizer.sh optimize"
     echo "• Setup development gestures: mouse-optimizer.sh gestures"
     echo "• Monitor mouse battery: mouse-optimizer.sh monitor"
@@ -1241,12 +1267,25 @@ show_summary() {
     echo "• Development-specific gesture configuration"
     echo "• Mouse battery and performance monitoring"
     echo "• Display-aware cursor movement optimization"
-    echo "• Natural scrolling and precision settings for development work"
+    echo "=== Font Configuration Features ==="
+    echo "• 20 most popular Nerd Fonts for development"
+    echo "• Nerd Font symbols for enhanced terminal and editor experience"
+    echo "• MonoLisa font installation from USB drive"
+    echo "• Automatic font cache optimization"
+    echo "• VS Code and terminal font configuration"
+    echo "=== Terminal Features ==="
+    echo "• Ghostty terminal with GPU acceleration and development optimizations"
+    echo "• Optimized for triple 4K displays with enhanced performance"
+    echo "• MonoLisa and Nerd Font integration with symbol support"
+    echo "• Development-focused keybindings and shell integration"
+    echo "• Split panes and tab management for development workflows"
     echo ""
     echo "=== Post-Installation Tasks ==="
     echo "• Run 'grub-mkconfig -o /boot/grub/grub.cfg' to apply GRUB optimizations"
     echo "• Run 'setup-dev-caches.sh' as your user to optimize development caches"
-    echo "• Run 'mouse-optimizer.sh optimize' to configure mouse for triple displays"
+    echo "• Run 'install-ghostty.sh install' to install and configure Ghostty terminal"
+    echo "• Run 'install-dev-fonts.sh install' to install all development fonts"
+    echo "• Run 'install-dev-fonts.sh monolisa' to install MonoLisa from USB"
     echo "• Setup development gestures with 'mouse-optimizer.sh gestures'"
     echo "• Monitor mouse battery with 'mouse-optimizer.sh monitor'"
     echo "• Configure display layout with 'display-optimizer.sh layout horizontal'"
@@ -1290,6 +1329,8 @@ main() {
     create_memory_optimizations
     create_display_optimizations
     create_input_optimizations
+    create_font_installation
+    create_ghostty_installation
     create_podman_optimization
     create_btrfs_maintenance
     create_enhanced_monitoring

@@ -195,7 +195,8 @@ After successfully installing Arch Linux and configuring your desktop environmen
 # Install development packages
 sudo pacman -S podman podman-compose buildah skopeo
 sudo pacman -S nodejs npm python python-pip rust go
-sudo pacman -S code pyenv python-poetry
+sudo pacman -S code pyenv python-poetry dotnet-sdk aspnet-runtime
+sudo pacman -S kitty alacritty  # Additional terminal options
 
 # Install Python development tools
 # pyenv for Python version management
@@ -205,9 +206,20 @@ curl https://pyenv.run | bash
 # uv for ultra-fast Python package installer
 pip install --user uv
 
+# Install .NET development tools
+# dotnet-sdk already installed via pacman
+# Install additional .NET tools
+dotnet tool install --global dotnet-ef
+dotnet tool install --global dotnet-aspnet-codegenerator
+dotnet tool install --global dotnet-dump
+dotnet tool install --global dotnet-trace
+
+# Install modern terminal emulator
+install-ghostty.sh install        # Install Ghostty terminal
+
 # Install AUR development tools
 yay -S visual-studio-code-bin
-yay -S jetbrains-toolbox           # Use toolbox to install IntelliJ IDEA Ultimate
+yay -S jetbrains-toolbox           # Use toolbox to install IntelliJ IDEA Ultimate and Rider
 yay -S nvm
 
 # Enable and start Podman services
@@ -265,11 +277,51 @@ docker run --rm -it \
   -v $(pwd):/workspace -w /workspace \
   python:3.12
 
-# IntelliJ IDEA Ultimate development
+# JetBrains IDEs for comprehensive development
+# IntelliJ IDEA Ultimate:
 # - Full Python support with Professional features
+# - Java/Kotlin enterprise development
 # - Database tools integration
 # - Advanced debugging and profiling
-# - Enterprise framework support
+
+# JetBrains Rider:
+# - Complete .NET development environment
+# - ASP.NET Core and Blazor support
+# - Entity Framework integration
+# - Advanced .NET debugging and profiling
+# - Docker and container development
+
+#### Font Features for Development
+```bash
+# Nerd Font symbols enhance development experience:
+# - Git status indicators in terminal
+# - File type icons in file managers
+# - Enhanced prompt symbols
+# - IDE symbol integration
+
+# MonoLisa premium features:
+# - Designed specifically for programming
+# - Excellent readability at small sizes
+# - Optimized character spacing
+# - Professional ligatures for code
+
+# Container development with optimized development tools, fonts, and terminal
+podman run --rm -it \
+  -v ~/.local/share/fonts:/root/.local/share/fonts \
+  -v ~/.pyenv:/root/.pyenv \
+  -v ~/.cache/pypoetry:/root/.cache/pypoetry \
+  -v ~/.dotnet:/root/.dotnet \
+  -v ~/.nuget:/root/.nuget \
+  -v $(pwd):/workspace -w /workspace \
+  python:3.12
+
+# .NET development container with full environment
+dev-dotnet                                # Quick .NET SDK environment
+
+# Terminal options for development:
+ghostty                                   # Modern GPU-accelerated terminal
+kitty                                     # Feature-rich terminal with ligatures
+alacritty                                 # Minimal GPU-accelerated terminal
 ```
 
 # Activate development environment
@@ -775,7 +827,8 @@ sudo pacman -Syu
 ├── /var/cache/maven/       # Maven/Gradle cache
 ├── /var/cache/pyenv/       # Python version management cache
 ├── /var/cache/poetry/      # Python dependency management cache
-└── /var/cache/uv/          # Ultra-fast Python package cache
+├── /var/cache/uv/          # Ultra-fast Python package cache
+└── /var/cache/dotnet/      # .NET SDK, packages, and build cache
 ```
 
 **Ideal for**:
