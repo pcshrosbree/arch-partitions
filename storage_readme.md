@@ -47,6 +47,7 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 - **Motherboard**: ASUS ROG Crosshair X870E Hero (AMD X870E AM5 ATX)
 - **Graphics**: AMD Radeon RX 9070 XT (PCIe 5.0 x16)
 - **Displays**: 3x Dell U4320Q UltraSharp 43" 4K UHD (11,520 x 2,160 total resolution)
+- **Input**: Logitech MX Master 3S with Logi Bolt USB Receiver
 - **Storage**: 
   - **Primary**: Samsung SSD 9100 PRO - 4TB NVMe (PCIe 5.0) - 14,800/13,400 MB/s, 2.2M/2.6M IOPS
   - **Secondary**: TEAMGROUP T-Force Z540 - 4TB NVMe (PCIe 4.0) - 12,400/11,800 MB/s, 1.4M/1.5M IOPS
@@ -103,8 +104,26 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 | **NVMe Power** | default_ps_max_latency_us=0 | Maximum performance mode |
 | **CPU Governor** | performance | Consistent high performance |
 | **Memory** | vm.dirty_ratio=20, vm.swappiness=1, huge pages | Optimized for DDR5-6000 and large datasets |
-| **Graphics** | amdgpu performance mode, memory/core OC | Optimized for triple 4K displays |
 | **Development Tools** | Increased memory limits, parallel builds | Utilizes 256GB for faster compilation |
+
+#### Input Device Optimizations
+```bash
+# Logitech MX Master 3S optimization for triple 4K displays
+# Automatic configuration when Logi Bolt receiver is connected
+
+# Mouse acceleration optimized for large display area (11,520 x 2,160)
+libinput Accel Speed 0.3                  # Balanced speed for precision and traversal
+libinput Natural Scrolling Enabled 1      # Natural scrolling (development preference)
+libinput Middle Emulation Enabled 0       # Disable accidental middle-click paste
+
+# Display-aware cursor movement
+xset m 2/1 4                              # Mouse acceleration: 2/1 multiplier, 4px threshold
+
+# Development gesture configuration
+# Thumb wheel: Workspace/window switching
+# Gesture button: Context-specific actions
+```
+| **Graphics** | amdgpu performance mode, memory/core OC | Optimized for triple 4K displays |
 | **Network** | 10Gb NIC optimizations | Enhanced network performance |
 | **Btrfs** | Enhanced compression, metadata optimization | Better performance and space efficiency |
 
@@ -1169,11 +1188,28 @@ snapper -c root cleanup number
 snapper -c home delete 10-20  # Delete snapshots 10 through 20
 ```
 
-#### Enhanced Performance Issues
+#### Display-Specific Issues
 ```bash
-# Check display and GPU performance
-display-optimizer.sh status
-display-optimizer.sh monitor
+# Check for display connectivity issues
+xrandr --listmonitors
+dmesg | grep -E "(amdgpu|drm|display)"
+
+# Verify all three displays are detected
+xrandr | grep " connected" | wc -l  # Should return 3
+
+# Check GPU memory allocation for triple 4K
+cat /sys/class/drm/card0/device/mem_info_vram_used
+cat /sys/class/drm/card0/device/mem_info_vram_total
+
+# Monitor GPU utilization during development work
+radeontop  # Real-time GPU monitoring
+
+# Check for display-related kernel messages
+journalctl -k | grep -E "(amdgpu|drm|display)"
+
+# Reset display configuration if needed
+display-optimizer.sh layout horizontal
+```
 
 # Verify GPU is in high performance mode
 cat /sys/class/drm/card0/device/power_dpm_force_performance_level  # Should be 'high'
@@ -1205,28 +1241,15 @@ sudo btrfs filesystem show | grep -A 5 "uuid:"
 sudo compsize /home /  # Shows compression ratios
 ```
 
-#### Display-Specific Issues
+#### Enhanced Performance Issues
 ```bash
-# Check for display connectivity issues
-xrandr --listmonitors
-dmesg | grep -E "(amdgpu|drm|display)"
+# Check display and GPU performance
+display-optimizer.sh status
+display-optimizer.sh monitor
 
-# Verify all three displays are detected
-xrandr | grep " connected" | wc -l  # Should return 3
-
-# Check GPU memory allocation for triple 4K
-cat /sys/class/drm/card0/device/mem_info_vram_used
-cat /sys/class/drm/card0/device/mem_info_vram_total
-
-# Monitor GPU utilization during development work
-radeontop  # Real-time GPU monitoring
-
-# Check for display-related kernel messages
-journalctl -k | grep -E "(amdgpu|drm|display)"
-
-# Reset display configuration if needed
-display-optimizer.sh layout horizontal
-```
+# Check mouse performance and configuration
+mouse-optimizer.sh status
+mouse-optimizer.sh monitor
 
 #### NVMe-Specific Issues
 ```bash
@@ -1381,11 +1404,13 @@ The automatic snapshot system provides safety nets for development work, while t
 - **DDR5-6000 memory optimization**: Full utilization of 256GB high-speed memory for builds and caches
 - **Triple 4K display productivity**: 11,520 x 2,160 total workspace optimized for development workflows
 - **AMD RX 9070 XT optimization**: GPU performance tuning for demanding multi-monitor setups
+- **Precision input control**: Logitech MX Master 3S optimized for large display area navigation
 - **RAMdisk support**: Ultra-fast temporary operations using DDR5-6000 speeds
 - **Intelligent caching**: Development tools use optimized storage locations with memory awareness
 - **Automated health monitoring**: Prevents performance degradation of storage, memory, and graphics
 - **Memory-aware build systems**: Development tools configured for large memory workloads
 - **Multi-monitor workspace automation**: Automatic application positioning across displays
+- **Input device automation**: Mouse optimization applied automatically when connected
 - **Parallel processing optimization**: Full utilization of 24-core CPU with large memory buffers
 
 ## Repository Information

@@ -309,9 +309,10 @@ EOF
     log "✓ Development environment optimizations created"
 }#!/bin/bash
 
-# Development Workstation Snapshot Setup Script
-# Configures snapper for automatic btrfs snapshots with development-optimized settings
-# Run this script after OS installation and first boot
+# Development Environment Setup Script
+# Configures comprehensive development workstation with snapshots, performance optimizations,
+# hardware tuning, and development tools optimization
+# Run this script after OS installation and desktop configuration
 
 set -euo pipefail
 
@@ -1013,7 +1014,7 @@ EOF
 
 # Show final summary and usage instructions
 show_summary() {
-    log "Snapshot setup completed successfully!"
+    log "Development environment setup completed successfully!"
     echo ""
     echo "=== Summary ==="
     echo "✓ Snapper configurations created for root and home filesystems"
@@ -1022,6 +1023,7 @@ show_summary() {
     echo "✓ System performance optimizations applied"
     echo "✓ DDR5-6000 memory optimizations configured"
     echo "✓ Triple Dell U4320Q 4K display optimizations configured"
+    echo "✓ Logitech MX Master 3S mouse optimizations configured"
     echo "✓ NVMe health monitoring enabled (hourly checks)"
     echo "✓ Docker optimization configuration created"
     echo "✓ Btrfs maintenance service enabled (weekly)"
@@ -1029,6 +1031,7 @@ show_summary() {
     echo "✓ Backup script created: /usr/local/bin/dev-backup.sh"
     echo "✓ Monitoring script created: /usr/local/bin/snapshot-monitor.sh"
     echo "✓ NVMe health monitor: /usr/local/bin/nvme-health-monitor.sh"
+    echo "✓ Mouse optimization script: /usr/local/bin/mouse-optimizer.sh"
     echo "✓ Display optimization script: /usr/local/bin/display-optimizer.sh"
     echo "✓ Memory optimization script: /usr/local/bin/memory-optimizer.sh"
     echo "✓ Restore helper script created: /usr/local/bin/snapshot-restore.sh"
@@ -1041,7 +1044,10 @@ show_summary() {
     echo "• Create pre-deploy snapshot: dev-backup.sh predeploy myapp v1.2.3"
     echo "• List all snapshots: dev-backup.sh list"
     echo "• Monitor snapshot usage: snapshot-monitor.sh status"
-    echo "• Check display configuration: display-optimizer.sh status"
+    echo "• Check mouse configuration: mouse-optimizer.sh status"
+    echo "• Optimize mouse for triple 4K: mouse-optimizer.sh optimize"
+    echo "• Setup development gestures: mouse-optimizer.sh gestures"
+    echo "• Monitor mouse battery: mouse-optimizer.sh monitor"
     echo "• Optimize GPU performance: display-optimizer.sh optimize"
     echo "• Configure display layout: display-optimizer.sh layout horizontal"
     echo "• Monitor GPU performance: display-optimizer.sh monitor"
@@ -1073,12 +1079,20 @@ show_summary() {
     echo "• Display layout management (horizontal, vertical, mixed)"
     echo "• Development workspace automation across all monitors"
     echo "• GPU temperature and VRAM monitoring"
-    echo "• High refresh rate optimization for development workflows"
+    echo "=== Input Device Features ==="
+    echo "• Logitech MX Master 3S optimization for triple 4K displays"
+    echo "• Automatic mouse configuration when Logi Bolt receiver connects"
+    echo "• Development-specific gesture configuration"
+    echo "• Mouse battery and performance monitoring"
+    echo "• Display-aware cursor movement optimization"
+    echo "• Natural scrolling and precision settings for development work"
     echo ""
     echo "=== Post-Installation Tasks ==="
     echo "• Run 'grub-mkconfig -o /boot/grub/grub.cfg' to apply GRUB optimizations"
     echo "• Run 'setup-dev-caches.sh' as your user to optimize development caches"
-    echo "• Run 'display-optimizer.sh optimize' to apply GPU performance settings"
+    echo "• Run 'mouse-optimizer.sh optimize' to configure mouse for triple displays"
+    echo "• Setup development gestures with 'mouse-optimizer.sh gestures'"
+    echo "• Monitor mouse battery with 'mouse-optimizer.sh monitor'"
     echo "• Configure display layout with 'display-optimizer.sh layout horizontal'"
     echo "• Setup development workspace with 'display-optimizer.sh workspace'"
     echo "• Consider creating a RAMdisk with 'memory-optimizer.sh ramdisk 16G' for builds"
@@ -1102,7 +1116,7 @@ show_summary() {
 
 # Main execution
 main() {
-    log "Starting snapshot setup for development workstation..."
+    log "Starting development environment setup..."
     
     check_root
     install_packages
@@ -1119,13 +1133,14 @@ main() {
     create_system_optimizations
     create_memory_optimizations
     create_display_optimizations
+    create_input_optimizations
     create_docker_optimization
     create_btrfs_maintenance
     create_enhanced_monitoring
     create_dev_optimizations
     show_summary
     
-    log "✓ Snapshot setup completed successfully!"
+    log "✓ Development environment setup completed successfully!"
 }
 
 # Run main function
