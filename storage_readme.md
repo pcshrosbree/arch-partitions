@@ -1,4 +1,16 @@
-**Performance# Development Workstation Storage Architecture
+#### Automated Health Checks
+- **NVMe health monitoring**: Hourly temperature and wear level checks
+- **Memory performance monitoring**: DDR5-6000 speed and stability verification
+- **GPU monitoring**: Temperature, VRAM usage, and performance tracking
+- **Display optimization**: Automatic GPU performance settings on boot
+- **Btrfs maintenance**: Weekly defragmentation and balancing
+- **Snapshot cleanup**: Daily automated cleanup
+- **Performance monitoring**: Real-time I/O, memory usage, and temperature tracking
+
+#### Manual Optimization Commands
+```bash
+# Check display configuration and GPU status
+display**Performance# Development Workstation Storage Architecture
 
 A comprehensive btrfs-based storage solution optimized for software development with automatic snapshots, performance optimization, and organized data management.
 
@@ -34,6 +46,7 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 - **RAM**: 256GB G.SKILL Flare X5 DDR5-6000 (CL34-44-44-96 @ 1.35V)
 - **Motherboard**: ASUS ROG Crosshair X870E Hero (AMD X870E AM5 ATX)
 - **Graphics**: AMD Radeon RX 9070 XT (PCIe 5.0 x16)
+- **Displays**: 3x Dell U4320Q UltraSharp 43" 4K UHD (11,520 x 2,160 total resolution)
 - **Storage**: 
   - **Primary**: Samsung SSD 9100 PRO - 4TB NVMe (PCIe 5.0) - 14,800/13,400 MB/s, 2.2M/2.6M IOPS
   - **Secondary**: TEAMGROUP T-Force Z540 - 4TB NVMe (PCIe 4.0) - 12,400/11,800 MB/s, 1.4M/1.5M IOPS
@@ -90,6 +103,7 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 | **NVMe Power** | default_ps_max_latency_us=0 | Maximum performance mode |
 | **CPU Governor** | performance | Consistent high performance |
 | **Memory** | vm.dirty_ratio=20, vm.swappiness=1, huge pages | Optimized for DDR5-6000 and large datasets |
+| **Graphics** | amdgpu performance mode, memory/core OC | Optimized for triple 4K displays |
 | **Development Tools** | Increased memory limits, parallel builds | Utilizes 256GB for faster compilation |
 | **Network** | 10Gb NIC optimizations | Enhanced network performance |
 | **Btrfs** | Enhanced compression, metadata optimization | Better performance and space efficiency |
@@ -1157,6 +1171,22 @@ snapper -c home delete 10-20  # Delete snapshots 10 through 20
 
 #### Enhanced Performance Issues
 ```bash
+# Check display and GPU performance
+display-optimizer.sh status
+display-optimizer.sh monitor
+
+# Verify GPU is in high performance mode
+cat /sys/class/drm/card0/device/power_dpm_force_performance_level  # Should be 'high'
+
+# Check VRAM usage for triple 4K displays
+radeontop -d - -l 1 | grep VRAM
+
+# Monitor GPU temperature under load
+watch -n 5 'sensors | grep -E "(amdgpu|radeon)" -A 5'
+
+# Check display refresh rates and configuration
+xrandr | grep -E "\*|connected"
+
 # Check NVMe drive health and performance
 nvme-health-monitor.sh
 
@@ -1164,15 +1194,38 @@ nvme-health-monitor.sh
 watch -n 1 'iostat -x 1 1 | grep nvme'
 
 # Check for thermal throttling
-sensors | grep -E "(nvme|CPU)"
+sensors | grep -E "(nvme|CPU|amdgpu)"
 
 # Verify system optimizations are active
 cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor  # Should be 'performance'
-sysctl vm.dirty_ratio vm.swappiness  # Should be 15 and 1
+sysctl vm.dirty_ratio vm.swappiness  # Should be 20 and 1
 
 # Check btrfs compression efficiency
 sudo btrfs filesystem show | grep -A 5 "uuid:"
 sudo compsize /home /  # Shows compression ratios
+```
+
+#### Display-Specific Issues
+```bash
+# Check for display connectivity issues
+xrandr --listmonitors
+dmesg | grep -E "(amdgpu|drm|display)"
+
+# Verify all three displays are detected
+xrandr | grep " connected" | wc -l  # Should return 3
+
+# Check GPU memory allocation for triple 4K
+cat /sys/class/drm/card0/device/mem_info_vram_used
+cat /sys/class/drm/card0/device/mem_info_vram_total
+
+# Monitor GPU utilization during development work
+radeontop  # Real-time GPU monitoring
+
+# Check for display-related kernel messages
+journalctl -k | grep -E "(amdgpu|drm|display)"
+
+# Reset display configuration if needed
+display-optimizer.sh layout horizontal
 ```
 
 #### NVMe-Specific Issues
@@ -1246,9 +1299,16 @@ cp -a /mnt/source/* /mnt/target/
 
 #### System Logs and Monitoring
 ```bash
+# Display and GPU logs
+journalctl -u display-optimizer.service
+dmesg | grep -E "(amdgpu|drm|display)"
+
 # NVMe health monitoring logs
 journalctl -u nvme-health-monitor.timer
 tail -f /var/log/nvme-health.log
+
+# Memory optimization logs
+journalctl -u memory-optimizer.service
 
 # Snapshot monitoring logs
 tail -f /var/log/snapshot-monitor.log
@@ -1259,17 +1319,40 @@ journalctl -u btrfs-maintenance.timer
 # System performance logs
 journalctl -k | grep btrfs
 journalctl -k | grep nvme
-dmesg | grep -E "(nvme|btrfs)"
+journalctl -k | grep amdgpu
+dmesg | grep -E "(nvme|btrfs|amdgpu)"
 ```
 
 #### Performance Benchmarking
 ```bash
-# Quick performance validation
+# Display and GPU performance testing
+# GPU memory bandwidth test
+clpeak  # OpenCL performance test (install with: pacman -S clpeak)
+
+# GPU compute performance
+glmark2  # OpenGL benchmark
+
+# Display performance test
+xrandr --output DP-1 --mode 3840x2160 --rate 60
+xrandr --output DP-2 --mode 3840x2160 --rate 60  
+xrandr --output DP-3 --mode 3840x2160 --rate 60
+
+# Memory performance validation
+memory-optimizer.sh benchmark
+
+# Storage performance test
 fio --name=random-write --ioengine=libaio --rw=randwrite --bs=4k --size=1G --numjobs=4 --runtime=60 --group_reporting --filename=/tmp/perf-test
 
 # Development workload simulation
 time git clone https://github.com/torvalds/linux.git /tmp/linux-test
 cd /tmp/linux-test && time make defconfig && time make -j$(nproc) modules_prepare
+
+# Triple monitor desktop performance
+# Test window management and switching between displays
+for i in {1..3}; do
+    gnome-terminal &
+    sleep 1
+done
 
 # Compression efficiency test
 echo "test data" | btrfs-compress zstd:1
@@ -1296,10 +1379,13 @@ The automatic snapshot system provides safety nets for development work, while t
 - **Exceptional storage performance**: Samsung 9100 PRO with 2.6M write IOPS for system operations
 - **High-speed development storage**: TEAMGROUP Z540 with 1.5M write IOPS for active development
 - **DDR5-6000 memory optimization**: Full utilization of 256GB high-speed memory for builds and caches
+- **Triple 4K display productivity**: 11,520 x 2,160 total workspace optimized for development workflows
+- **AMD RX 9070 XT optimization**: GPU performance tuning for demanding multi-monitor setups
 - **RAMdisk support**: Ultra-fast temporary operations using DDR5-6000 speeds
 - **Intelligent caching**: Development tools use optimized storage locations with memory awareness
-- **Automated health monitoring**: Prevents performance degradation of both storage and memory
+- **Automated health monitoring**: Prevents performance degradation of storage, memory, and graphics
 - **Memory-aware build systems**: Development tools configured for large memory workloads
+- **Multi-monitor workspace automation**: Automatic application positioning across displays
 - **Parallel processing optimization**: Full utilization of 24-core CPU with large memory buffers
 
 ## Repository Information

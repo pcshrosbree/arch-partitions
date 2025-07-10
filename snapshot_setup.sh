@@ -1021,6 +1021,7 @@ show_summary() {
     echo "✓ Development snapshot timer created (every 30 minutes during work hours)"
     echo "✓ System performance optimizations applied"
     echo "✓ DDR5-6000 memory optimizations configured"
+    echo "✓ Triple Dell U4320Q 4K display optimizations configured"
     echo "✓ NVMe health monitoring enabled (hourly checks)"
     echo "✓ Docker optimization configuration created"
     echo "✓ Btrfs maintenance service enabled (weekly)"
@@ -1028,6 +1029,7 @@ show_summary() {
     echo "✓ Backup script created: /usr/local/bin/dev-backup.sh"
     echo "✓ Monitoring script created: /usr/local/bin/snapshot-monitor.sh"
     echo "✓ NVMe health monitor: /usr/local/bin/nvme-health-monitor.sh"
+    echo "✓ Display optimization script: /usr/local/bin/display-optimizer.sh"
     echo "✓ Memory optimization script: /usr/local/bin/memory-optimizer.sh"
     echo "✓ Restore helper script created: /usr/local/bin/snapshot-restore.sh"
     echo "✓ Development cache setup: /usr/local/bin/setup-dev-caches.sh"
@@ -1039,7 +1041,11 @@ show_summary() {
     echo "• Create pre-deploy snapshot: dev-backup.sh predeploy myapp v1.2.3"
     echo "• List all snapshots: dev-backup.sh list"
     echo "• Monitor snapshot usage: snapshot-monitor.sh status"
-    echo "• Check memory optimization: memory-optimizer.sh status"
+    echo "• Check display configuration: display-optimizer.sh status"
+    echo "• Optimize GPU performance: display-optimizer.sh optimize"
+    echo "• Configure display layout: display-optimizer.sh layout horizontal"
+    echo "• Monitor GPU performance: display-optimizer.sh monitor"
+    echo "• Setup dev workspace: display-optimizer.sh workspace"
     echo "• Create RAMdisk for builds: memory-optimizer.sh ramdisk 16G"
     echo "• Benchmark memory: memory-optimizer.sh benchmark"
     echo "• Setup development caches: setup-dev-caches.sh"
@@ -1061,12 +1067,20 @@ show_summary() {
     echo "• VFS cache pressure optimized for development workloads"
     echo "• Huge pages configured for performance (1024 x 2MB)"
     echo "• Development tools configured with increased memory limits"
-    echo "• RAMdisk support for ultra-fast temporary operations"
+    echo "=== Display-Specific Features ==="
+    echo "• Triple 4K display support (11,520 x 2,160 total resolution)"
+    echo "• GPU performance optimization for AMD RX 9070 XT"
+    echo "• Display layout management (horizontal, vertical, mixed)"
+    echo "• Development workspace automation across all monitors"
+    echo "• GPU temperature and VRAM monitoring"
+    echo "• High refresh rate optimization for development workflows"
     echo ""
     echo "=== Post-Installation Tasks ==="
     echo "• Run 'grub-mkconfig -o /boot/grub/grub.cfg' to apply GRUB optimizations"
     echo "• Run 'setup-dev-caches.sh' as your user to optimize development caches"
-    echo "• Run 'memory-optimizer.sh optimize' to apply runtime memory optimizations"
+    echo "• Run 'display-optimizer.sh optimize' to apply GPU performance settings"
+    echo "• Configure display layout with 'display-optimizer.sh layout horizontal'"
+    echo "• Setup development workspace with 'display-optimizer.sh workspace'"
     echo "• Consider creating a RAMdisk with 'memory-optimizer.sh ramdisk 16G' for builds"
     echo "• Source ~/.build-env in your shell for memory-optimized build environment"
     echo "• Restart system to apply all kernel parameter optimizations"
@@ -1104,6 +1118,7 @@ main() {
     create_git_hooks
     create_system_optimizations
     create_memory_optimizations
+    create_display_optimizations
     create_docker_optimization
     create_btrfs_maintenance
     create_enhanced_monitoring
