@@ -2,6 +2,9 @@
 
 A comprehensive btrfs-based storage solution optimized for software development with automatic snapshots, performance optimization, and organized data management.
 
+**Repository**: https://github.com/pcshrosbree/arch-partitions  
+**Author**: pcshrosbree
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -104,8 +107,8 @@ After successfully installing Arch Linux and configuring your desktop environmen
 
 1. **Download and run the snapshot setup script**:
    ```bash
-   # Download the script
-   curl -O https://your-repo/setup-snapshots.sh
+   # Download the script from GitHub
+   curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/setup-snapshots.sh
    chmod +x setup-snapshots.sh
    
    # Run as root
@@ -114,8 +117,8 @@ After successfully installing Arch Linux and configuring your desktop environmen
 
 2. **Enable Git integration** (optional):
    ```bash
-   # Download the script
-   curl -O https://your-repo/enable-git-integration.sh
+   # Download the script from GitHub
+   curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/enable-git-integration.sh
    chmod +x enable-git-integration.sh
    
    # Run as your user (not root)
@@ -155,17 +158,21 @@ sudo systemctl start docker
 sudo usermod -aG docker $USER
 ```
 
-#### Configure Development Environment
+#### Configure Git
 ```bash
 # Setup development directories
 mkdir -p ~/Projects/{personal,work,learning,experiments}
 mkdir -p ~/.config/{git,zsh,vim}
 mkdir -p ~/.local/bin
 
-# Configure Git
-git config --global user.name "Your Name"
+# Configure Git with your information
+git config --global user.name "pcshrosbree"
 git config --global user.email "your.email@example.com"
 git config --global init.defaultBranch main
+git config --global init.templatedir /usr/local/share/git-templates
+
+# Clone the arch-partitions repository for reference
+git clone https://github.com/pcshrosbree/arch-partitions.git ~/Projects/personal/arch-partitions
 
 # Setup shell (if using zsh)
 sudo pacman -S zsh oh-my-zsh-git
@@ -198,8 +205,8 @@ chsh -s /bin/zsh
    
 2. **Download and modify the storage setup script**:
    ```bash
-   # Download the script (replace with your method)
-   curl -O https://your-repo/setup-storage.sh
+   # Download the script from GitHub
+   curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/setup-storage.sh
    
    # Edit device paths to match your hardware
    nano setup-storage.sh
@@ -931,7 +938,7 @@ git-snapshot diff 42
 git-snapshot restore 42 src/main.py config.json
 ```
 
-### Repository Management
+#### Repository Management
 
 #### Enable for New Repository
 ```bash
@@ -947,6 +954,8 @@ cd my-project
 cp /usr/local/share/git-templates/hooks/* .git/hooks/
 
 # Or use the integration script
+curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/enable-git-integration.sh
+chmod +x enable-git-integration.sh
 ./enable-git-integration.sh
 ```
 
@@ -1120,4 +1129,23 @@ This storage architecture provides a robust, high-performance foundation for sof
 
 The automatic snapshot system provides safety nets for development work, while the Git integration seamlessly captures development milestones. The organized subvolume structure makes it easy to manage different types of data and optimize performance for specific use cases.
 
-For support or questions, refer to the troubleshooting section or consult the btrfs and snapper documentation.
+## Repository Information
+
+- **GitHub Repository**: https://github.com/pcshrosbree/arch-partitions
+- **Author**: pcshrosbree
+- **License**: [Add your preferred license]
+
+## Contributing
+
+If you find issues or have improvements, please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+
+## Support
+
+For support or questions:
+- Open an issue on GitHub
+- Refer to the troubleshooting section above
+- Consult the btrfs and snapper documentation
