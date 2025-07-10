@@ -108,21 +108,31 @@ create_partitions() {
 
 # Format filesystems
 format_filesystems() {
-    log "Formatting filesystems..."
+    log "Formatting filesystems with optimized settings..."
     
     # EFI System Partition
     log "Creating EFI System Partition..."
     mkfs.fat -F32 -n "EFI_SYSTEM" "${PRIMARY_NVME}p1"
     
-    # Primary NVMe - Root btrfs
-    log "Creating root btrfs filesystem..."
-    mkfs.btrfs -f -L "ROOT" "${PRIMARY_NVME}p2"
+    # Primary NVMe - Root btrfs with performance optimizations
+    log "Creating root btrfs filesystem with performance optimizations..."
+    mkfs.btrfs -f -L "ROOT" \
+        --metadata single \
+        --data single \
+        --nodesize 16384 \
+        --sectorsize 4096 \
+        "${PRIMARY_NVME}p2"
     
-    # Secondary NVMe - Home btrfs
-    log "Creating home btrfs filesystem..."
-    mkfs.btrfs -f -L "HOME" "${SECONDARY_NVME}p1"
+    # Secondary NVMe - Home btrfs with performance optimizations
+    log "Creating home btrfs filesystem with performance optimizations..."
+    mkfs.btrfs -f -L "HOME" \
+        --metadata single \
+        --data single \
+        --nodesize 16384 \
+        --sectorsize 4096 \
+        "${SECONDARY_NVME}p1"
     
-    # Bulk SATA - Bulk btrfs
+    # Bulk SATA - Bulk btrfs with standard settings
     log "Creating bulk btrfs filesystem..."
     mkfs.btrfs -f -L "BULK" "${BULK_SATA}p1"
 }
@@ -157,6 +167,11 @@ create_subvolumes() {
     btrfs subvolume create /mnt/home/@home_snapshots
     btrfs subvolume create /mnt/home/@docker
     btrfs subvolume create /mnt/home/@vms
+    btrfs subvolume create /mnt/home/@tmp_builds
+    btrfs subvolume create /mnt/home/@node_modules
+    btrfs subvolume create /mnt/home/@cargo_cache
+    btrfs subvolume create /mnt/home/@go_cache
+    btrfs subvolume create /mnt/home/@maven_cache
     
     umount /mnt/home
     
@@ -190,6 +205,11 @@ setup_mounts() {
     mkdir -p /mnt/target/mnt/bulk
     mkdir -p /mnt/target/var/lib/docker
     mkdir -p /mnt/target/var/lib/libvirt
+    mkdir -p /mnt/target/var/cache/builds
+    mkdir -p /mnt/target/var/cache/node_modules
+    mkdir -p /mnt/target/var/cache/cargo
+    mkdir -p /mnt/target/var/cache/go
+    mkdir -p /mnt/target/var/cache/maven
     
     # Get UUIDs
     ROOT_UUID=$(blkid -s UUID -o value "${PRIMARY_NVME}p2")
@@ -197,35 +217,47 @@ setup_mounts() {
     BULK_UUID=$(blkid -s UUID -o value "${BULK_SATA}p1")
     EFI_UUID=$(blkid -s UUID -o value "${PRIMARY_NVME}p1")
     
-    # Mount filesystems
-    log "Mounting filesystems..."
+    # Mount filesystems with optimized options
+    log "Mounting filesystems with performance optimizations..."
     
-    # Root
-    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@ \
+    # Root with enhanced performance options
+    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@ \
         "${PRIMARY_NVME}p2" /mnt/target
     
     # EFI
     mount "${PRIMARY_NVME}p1" /mnt/target/boot/efi
     
-    # Other root subvolumes
-    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@tmp \
+    # Other root subvolumes with optimized settings
+    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@tmp,nodatacow \
         "${PRIMARY_NVME}p2" /mnt/target/tmp
-    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@var_log,nodatacow \
+    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@var_log,nodatacow \
         "${PRIMARY_NVME}p2" /mnt/target/var/log
-    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@var_cache,nodatacow \
+    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@var_cache,nodatacow \
         "${PRIMARY_NVME}p2" /mnt/target/var/cache
-    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@opt \
+    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@opt \
         "${PRIMARY_NVME}p2" /mnt/target/opt
-    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@usr_local \
+    mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@usr_local \
         "${PRIMARY_NVME}p2" /mnt/target/usr/local
     
-    # Home filesystem
-    mount -o defaults,noatime,compress=zstd:3,space_cache=v2,ssd,discard=async,subvol=@home \
+    # Home filesystem with enhanced performance
+    mount -o defaults,noatime,compress=zstd:3,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@home \
         "${SECONDARY_NVME}p1" /mnt/target/home
-    mount -o defaults,noatime,compress=zstd:3,space_cache=v2,ssd,discard=async,subvol=@docker,nodatacow \
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@docker,nodatacow \
         "${SECONDARY_NVME}p1" /mnt/target/var/lib/docker
-    mount -o defaults,noatime,compress=zstd:3,space_cache=v2,ssd,discard=async,subvol=@vms,nodatacow \
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@vms,nodatacow \
         "${SECONDARY_NVME}p1" /mnt/target/var/lib/libvirt
+    
+    # Development cache mounts
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@tmp_builds,nodatacow \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/builds
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@node_modules,nodatacow \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/node_modules
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@cargo_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/cargo
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@go_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/go
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@maven_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/maven
     
     # Bulk storage
     mount -o defaults,noatime,compress=zstd:6,space_cache=v2,ssd,discard=async \
@@ -237,23 +269,30 @@ setup_mounts() {
 # /etc/fstab: static file system information.
 # <file system> <mount point> <type> <options> <dump> <pass>
 
-# Root filesystem (ROOT)
-UUID=$ROOT_UUID / btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@ 0 1
+# Root filesystem (ROOT) - Samsung 9100 PRO with performance optimizations
+UUID=$ROOT_UUID / btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@ 0 1
 
 # EFI System Partition (EFI_SYSTEM)
 UUID=$EFI_UUID /boot/efi vfat defaults,noatime 0 2
 
-# Root subvolumes (ROOT)
-UUID=$ROOT_UUID /tmp btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@tmp,nodatacow 0 0
-UUID=$ROOT_UUID /var/log btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@var_log,nodatacow 0 0
-UUID=$ROOT_UUID /var/cache btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@var_cache,nodatacow 0 0
-UUID=$ROOT_UUID /opt btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@opt 0 0
-UUID=$ROOT_UUID /usr/local btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,discard=async,subvol=@usr_local 0 0
+# Root subvolumes (ROOT) - Samsung 9100 PRO
+UUID=$ROOT_UUID /tmp btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@tmp,nodatacow 0 0
+UUID=$ROOT_UUID /var/log btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@var_log,nodatacow 0 0
+UUID=$ROOT_UUID /var/cache btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@var_cache,nodatacow 0 0
+UUID=$ROOT_UUID /opt btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@opt 0 0
+UUID=$ROOT_UUID /usr/local btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@usr_local 0 0
 
-# Home filesystem (HOME)
-UUID=$HOME_UUID /home btrfs defaults,noatime,compress=zstd:3,space_cache=v2,ssd,discard=async,subvol=@home 0 2
-UUID=$HOME_UUID /var/lib/docker btrfs defaults,noatime,compress=zstd:3,space_cache=v2,ssd,discard=async,subvol=@docker,nodatacow 0 0
-UUID=$HOME_UUID /var/lib/libvirt btrfs defaults,noatime,compress=zstd:3,space_cache=v2,ssd,discard=async,subvol=@vms,nodatacow 0 0
+# Home filesystem (HOME) - TEAMGROUP Z540 with performance optimizations
+UUID=$HOME_UUID /home btrfs defaults,noatime,compress=zstd:3,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@home 0 2
+UUID=$HOME_UUID /var/lib/docker btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@docker,nodatacow 0 0
+UUID=$HOME_UUID /var/lib/libvirt btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@vms,nodatacow 0 0
+
+# Development cache mounts (HOME) - TEAMGROUP Z540
+UUID=$HOME_UUID /var/cache/builds btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@tmp_builds,nodatacow 0 0
+UUID=$HOME_UUID /var/cache/node_modules btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@node_modules,nodatacow 0 0
+UUID=$HOME_UUID /var/cache/cargo btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@cargo_cache 0 0
+UUID=$HOME_UUID /var/cache/go btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@go_cache 0 0
+UUID=$HOME_UUID /var/cache/maven btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@maven_cache 0 0
 
 # Bulk storage (BULK)
 UUID=$BULK_UUID /mnt/bulk btrfs defaults,noatime,compress=zstd:6,space_cache=v2,ssd,discard=async 0 2
@@ -263,6 +302,13 @@ EOF
     log "Storage setup complete!"
     log "Your filesystems are mounted at /mnt/target"
     log "fstab has been generated at /mnt/target/etc/fstab"
+    log ""
+    log "Performance optimizations applied:"
+    log "• Enhanced btrfs mount options (ssd_spread, commit=120)"
+    log "• Optimized filesystem creation settings"
+    log "• Development cache subvolumes created"
+    log "• Ready for high-performance development workloads"
+}
 }
 
 # Main execution

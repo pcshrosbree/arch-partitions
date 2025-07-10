@@ -1,4 +1,254 @@
+    chmod +x /usr/local/bin/snapshot-monitor.sh
+    
+    log "Monitoring script created at /usr/local/bin/snapshot-monitor.sh"
+}
+
+# Create enhanced monitoring script with NVMe health checking
+create_enhanced_monitoring() {
+    log "Creating enhanced monitoring script with NVMe health checking..."
+    
+    cat > /usr/local/bin/nvme-health-monitor.sh << 'EOF'
 #!/bin/bash
+
+# NVMe Health and Temperature Monitoring Script
+
+set -euo pipefail
+
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+log() {
+    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] $1${NC}"
+}
+
+warn() {
+    echo -e "${YELLOW}[WARNING] $1${NC}"
+}
+
+error() {
+    echo -e "${RED}[ERROR] $1${NC}"
+}
+
+# Check NVMe drive health
+check_nvme_health() {
+    local device="$1"
+    local device_name="$2"
+    
+    if [[ ! -e "$device" ]]; then
+        warn "$device_name not found at $device"
+        return 1
+    fi
+    
+    echo "=== $device_name Health Status ==="
+    
+    # Get temperature
+    local temp=$(nvme smart-log "$device" 2>/dev/null | grep temperature | awk '{print $3}' || echo "N/A")
+    
+    # Get percentage used
+    local usage=$(nvme smart-log "$device" 2>/dev/null | grep percentage_used | awk '{print $3}' | sed 's/%//' || echo "N/A")
+    
+    # Get available spare
+    local spare=$(nvme smart-log "$device" 2>/dev/null | grep available_spare | awk '{print $3}' | sed 's/%//' || echo "N/A")
+    
+    echo "Temperature: ${temp}°C"
+    echo "Percentage Used: ${usage}%"
+    echo "Available Spare: ${spare}%"
+    
+    # Alert conditions
+    if [[ "$temp" != "N/A" && "$temp" -gt 70 ]]; then
+        error "High temperature detected: ${temp}°C"
+    fi
+    
+    if [[ "$usage" != "N/A" && "$usage" -gt 80 ]]; then
+        warn "High wear level: ${usage}%"
+    fi
+    
+    if [[ "$spare" != "N/A" && "$spare" -lt 10 ]]; then
+        error "Low available spare: ${spare}%"
+    fi
+    
+    echo ""
+}
+
+# Check btrfs allocation and performance
+check_btrfs_performance() {
+    echo "=== Btrfs Performance Status ==="
+    
+    for fs in / /home /mnt/bulk; do
+        if mountpoint -q "$fs"; then
+            echo "Filesystem: $fs"
+            btrfs filesystem usage "$fs" 2>/dev/null | grep "Free (estimated)" || echo "  Status: OK"
+            echo ""
+        fi
+    done
+}
+
+# Main monitoring function
+main() {
+    log "NVMe Health and Performance Monitor"
+    echo ""
+    
+    # Check NVMe drives
+    check_nvme_health "/dev/nvme0n1" "Samsung SSD 9100 PRO (Primary)"
+    check_nvme_health "/dev/nvme1n1" "TEAMGROUP T-Force Z540 (Secondary)"
+    
+    # Check btrfs performance
+    check_btrfs_performance
+    
+    # Check I/O statistics
+    echo "=== I/O Statistics ==="
+    iostat -x 1 1 2>/dev/null | grep nvme || echo "iostat not available"
+    echo ""
+}
+
+main "$@"
+EOF
+
+    chmod +x /usr/local/bin/nvme-health-monitor.sh
+    
+    # Create systemd service for regular health monitoring
+    cat > /etc/systemd/system/nvme-health-monitor.service << 'EOF'
+[Unit]
+Description=NVMe Health Monitoring
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/nvme-health-monitor.sh
+User=root
+EOF
+
+    cat > /etc/systemd/system/nvme-health-monitor.timer << 'EOF'
+[Unit]
+Description=NVMe Health Monitoring Timer
+Requires=nvme-health-monitor.service
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    systemctl daemon-reload
+    systemctl enable --now nvme-health-monitor.timer
+    
+# Create development environment optimizations
+create_dev_optimizations() {
+    log "Creating development environment optimizations..."
+    
+    # Create VS Code settings for btrfs optimization
+    mkdir -p /etc/skel/.config/Code/User
+    cat > /etc/skel/.config/Code/User/settings.json << 'EOF'
+{
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/tmp/**": true,
+    "**/.snapshots/**": true,
+    "**/target/**": true,
+    "**/build/**": true
+  },
+  "search.exclude": {
+    "**/.snapshots": true,
+    "**/node_modules": true,
+    "**/target": true,
+    "**/build": true,
+    "**/.git": true
+  },
+  "files.exclude": {
+    "**/.snapshots": true
+  }
+}
+EOF
+
+    # Create Git performance configuration template
+    cat > /etc/skel/.gitconfig-performance << 'EOF'
+# Git performance optimizations for high-speed storage
+# Add these to your ~/.gitconfig with: git config --global --add include.path ~/.gitconfig-performance
+
+[core]
+    preloadindex = true
+    fscache = true
+
+[gc]
+    auto = 256
+
+[pack]
+    threads = 0
+    windowMemory = 100M
+    packSizeLimit = 100M
+
+[feature]
+    manyFiles = true
+
+[index]
+    threads = true
+EOF
+
+    # Create development cache directory setup script
+    cat > /usr/local/bin/setup-dev-caches.sh << 'EOF'
+#!/bin/bash
+
+# Development Cache Setup Script
+# Links common development caches to optimized storage locations
+
+set -euo pipefail
+
+USER_HOME="${HOME:-/home/$(whoami)}"
+
+# Create symlinks for development caches
+setup_cache_links() {
+    local cache_name="$1"
+    local user_cache_dir="$2"
+    local system_cache_dir="/var/cache/$cache_name"
+    
+    if [[ -d "$system_cache_dir" ]]; then
+        # Create user-specific cache directory
+        local user_cache_path="$system_cache_dir/$(whoami)"
+        sudo mkdir -p "$user_cache_path"
+        sudo chown "$(whoami):$(id -gn)" "$user_cache_path"
+        
+        # Remove existing cache and create symlink
+        if [[ -e "$user_cache_dir" && ! -L "$user_cache_dir" ]]; then
+            mv "$user_cache_dir" "$user_cache_dir.backup-$(date +%Y%m%d)"
+        fi
+        
+        rm -f "$user_cache_dir"
+        ln -sf "$user_cache_path" "$user_cache_dir"
+        
+        echo "✓ Linked $cache_name cache to optimized storage"
+    fi
+}
+
+# Setup common development caches
+echo "Setting up development cache optimizations..."
+
+# Node.js cache
+setup_cache_links "node_modules" "$USER_HOME/.npm"
+
+# Cargo (Rust) cache
+setup_cache_links "cargo" "$USER_HOME/.cargo"
+
+# Go module cache
+setup_cache_links "go" "$USER_HOME/go"
+
+# Maven cache
+setup_cache_links "maven" "$USER_HOME/.m2"
+
+echo "Development cache setup complete!"
+echo "Caches are now using optimized storage locations."
+EOF
+
+    chmod +x /usr/local/bin/setup-dev-caches.sh
+    
+    log "✓ Development environment optimizations created"
+}#!/bin/bash
 
 # Development Workstation Snapshot Setup Script
 # Configures snapper for automatic btrfs snapshots with development-optimized settings
@@ -44,23 +294,27 @@ check_root() {
 
 # Install required packages
 install_packages() {
-    log "Installing snapshot management packages..."
+    log "Installing snapshot management and optimization packages..."
     
     if command -v apt-get &> /dev/null; then
         apt-get update
-        apt-get install -y snapper btrfs-progs
+        apt-get install -y snapper btrfs-progs cpupower lm-sensors nvme-cli
     elif command -v dnf &> /dev/null; then
-        dnf install -y snapper btrfs-progs
+        dnf install -y snapper btrfs-progs cpupower lm_sensors nvme-cli
     elif command -v pacman &> /dev/null; then
-        pacman -Sy --noconfirm snapper btrfs-progs
+        pacman -Sy --noconfirm snapper btrfs-progs cpupower lm_sensors nvme-cli
     else
-        warn "Could not determine package manager. Please install snapper and btrfs-progs manually."
+        warn "Could not determine package manager. Please install snapper, btrfs-progs, cpupower, lm_sensors, and nvme-cli manually."
         exit 1
     fi
     
     # Enable snapper service
     systemctl enable --now snapper-timeline.timer
     systemctl enable --now snapper-cleanup.timer
+    
+    # Enable CPU performance governor
+    systemctl enable cpupower
+    echo 'governor="performance"' > /etc/default/cpupower
 }
 
 # Create snapper configuration for root
@@ -386,7 +640,42 @@ EOF
     systemctl daemon-reload
     systemctl enable --now snapshot-cleanup.timer
     
-    log "Cleanup service enabled"
+# Create enhanced btrfs maintenance service
+create_btrfs_maintenance() {
+    log "Creating enhanced btrfs maintenance service..."
+    
+    cat > /etc/systemd/system/btrfs-maintenance.service << 'EOF'
+[Unit]
+Description=Btrfs maintenance tasks
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'for fs in / /home /mnt/bulk; do btrfs filesystem defragment -r -czstd "$fs" 2>/dev/null || true; done'
+ExecStart=/bin/bash -c 'for fs in / /home /mnt/bulk; do btrfs balance start -dusage=50 "$fs" 2>/dev/null || true; done'
+ExecStart=/bin/bash -c 'for fs in / /home; do btrfs property set "$fs" compression zstd 2>/dev/null || true; done'
+User=root
+IOSchedulingClass=3
+IOSchedulingPriority=7
+EOF
+
+    cat > /etc/systemd/system/btrfs-maintenance.timer << 'EOF'
+[Unit]
+Description=Weekly Btrfs maintenance
+Requires=btrfs-maintenance.service
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    systemctl daemon-reload
+    systemctl enable --now btrfs-maintenance.timer
+    
+    log "✓ Btrfs maintenance service enabled"
 }
 
 # Create snapshot restore helper script
@@ -671,9 +960,16 @@ show_summary() {
     echo "✓ Snapper configurations created for root and home filesystems"
     echo "✓ Automatic timeline snapshots enabled"
     echo "✓ Development snapshot timer created (every 30 minutes during work hours)"
+    echo "✓ System performance optimizations applied"
+    echo "✓ NVMe health monitoring enabled (hourly checks)"
+    echo "✓ Docker optimization configuration created"
+    echo "✓ Btrfs maintenance service enabled (weekly)"
+    echo "✓ Development environment optimizations created"
     echo "✓ Backup script created: /usr/local/bin/dev-backup.sh"
     echo "✓ Monitoring script created: /usr/local/bin/snapshot-monitor.sh"
+    echo "✓ NVMe health monitor: /usr/local/bin/nvme-health-monitor.sh"
     echo "✓ Restore helper script created: /usr/local/bin/snapshot-restore.sh"
+    echo "✓ Development cache setup: /usr/local/bin/setup-dev-caches.sh"
     echo "✓ Git integration hooks created"
     echo "✓ Automatic cleanup services enabled"
     echo ""
@@ -682,8 +978,23 @@ show_summary() {
     echo "• Create pre-deploy snapshot: dev-backup.sh predeploy myapp v1.2.3"
     echo "• List all snapshots: dev-backup.sh list"
     echo "• Monitor snapshot usage: snapshot-monitor.sh status"
+    echo "• Check NVMe health: nvme-health-monitor.sh"
+    echo "• Setup development caches: setup-dev-caches.sh"
     echo "• Restore files interactively: snapshot-restore.sh restore"
     echo "• Quick file restore: snapshot-restore.sh quick-restore home 42 /home/user/important.txt"
+    echo ""
+    echo "=== Performance Optimizations ==="
+    echo "• CPU governor set to 'performance'"
+    echo "• NVMe power management optimized"
+    echo "• Memory and I/O settings tuned for high-speed storage"
+    echo "• Network settings optimized for 10Gb NIC"
+    echo "• Docker configured for btrfs optimization"
+    echo "• VS Code and Git configurations optimized"
+    echo ""
+    echo "=== Post-Installation Tasks ==="
+    echo "• Run 'grub-mkconfig -o /boot/grub/grub.cfg' to apply GRUB optimizations"
+    echo "• Run 'setup-dev-caches.sh' as your user to optimize development caches"
+    echo "• Restart system to apply all kernel parameter optimizations"
     echo ""
     echo "=== Git Integration ==="
     echo "To enable Git snapshot hooks for new repositories:"
@@ -716,6 +1027,11 @@ main() {
     create_cleanup_service
     create_restore_helper
     create_git_hooks
+    create_system_optimizations
+    create_docker_optimization
+    create_btrfs_maintenance
+    create_enhanced_monitoring
+    create_dev_optimizations
     show_summary
     
     log "✓ Snapshot setup completed successfully!"

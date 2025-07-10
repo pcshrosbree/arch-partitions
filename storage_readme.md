@@ -35,9 +35,9 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 - **Motherboard**: ASUS ROG Crosshair X870E Hero (AMD X870E AM5 ATX)
 - **Graphics**: AMD Radeon RX 9070 XT (PCIe 5.0 x16)
 - **Storage**: 
-  - 14,000 MB/s 4TB NVMe SSD (PCIe 5.0 x4)
-  - 7,450 MB/s 4TB NVMe SSD (PCIe 4.0 x4)
-  - 8TB SATA SSD
+  - **Primary**: Samsung SSD 9100 PRO - 4TB NVMe (PCIe 5.0) - 14,800/13,400 MB/s, 2.2M/2.6M IOPS
+  - **Secondary**: TEAMGROUP T-Force Z540 - 4TB NVMe (PCIe 4.0) - 12,400/11,800 MB/s, 1.4M/1.5M IOPS
+  - **Bulk**: 8TB SATA SSD
 - **Network**: Intel X520-DA2 10Gb NIC (PCIe 5.0 x8)
 
 ## Storage Architecture
@@ -45,28 +45,36 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 ### Physical Layout
 
 ```
+```
 ┌─────────────────────┬─────────────────────┬─────────────────────┐
 │   PRIMARY NVMe      │   SECONDARY NVMe    │    BULK SATA       │
 │   (PCIe 5.0)        │   (PCIe 4.0)        │   (SATA SSD)        │
-│   14,000 MB/s       │   7,450 MB/s        │   ~500 MB/s         │
-│   4TB               │   4TB               │   8TB               │
+│ Samsung 9100 PRO    │ TEAMGROUP Z540      │   ~500 MB/s         │
+│ 14,800/13,400 MB/s  │ 12,400/11,800 MB/s  │   8TB               │
+│ 2.2M/2.6M IOPS      │ 1.4M/1.5M IOPS      │                     │
+│   4TB               │   4TB               │                     │
 └─────────────────────┴─────────────────────┴─────────────────────┘
 ```
 
 ### Logical Layout
 
 ```
-/ (ROOT filesystem on Primary NVMe)
+/ (ROOT filesystem on Samsung 9100 PRO)
 ├── /boot/efi (EFI_SYSTEM - FAT32)
 ├── /tmp (@tmp subvolume, nodatacow)
 ├── /var/log (@var_log subvolume, nodatacow)
 ├── /var/cache (@var_cache subvolume, nodatacow)
 ├── /opt (@opt subvolume)
 ├── /usr/local (@usr_local subvolume)
-├── /home (HOME filesystem on Secondary NVMe)
+├── /home (HOME filesystem on TEAMGROUP Z540)
 │   ├── @home (user directories)
 │   ├── @docker (Docker storage, nodatacow)
-│   └── @vms (VM storage, nodatacow)
+│   ├── @vms (VM storage, nodatacow)
+│   ├── @tmp_builds (build cache, nodatacow)
+│   ├── @node_modules (Node.js cache, nodatacow)
+│   ├── @cargo_cache (Rust cache)
+│   ├── @go_cache (Go module cache)
+│   └── @maven_cache (Maven/Gradle cache)
 └── /mnt/bulk (BULK filesystem on SATA SSD)
     ├── @archives (Long-term storage)
     ├── @builds (Build artifacts)
@@ -74,13 +82,16 @@ All filesystems use btrfs with automatic snapshots, compression, and development
     └── @backup (Backup storage)
 ```
 
-### Compression Strategy
+### Performance Optimizations
 
-| Filesystem | Compression | Use Case |
-|------------|-------------|----------|
-| ROOT | zstd:1 | Fast access for OS and tools |
-| HOME | zstd:3 | Balanced for development files |
-| BULK | zstd:6 | Maximum compression for archives |
+| Component | Optimization | Benefit |
+|-----------|--------------|---------|
+| **Mount Options** | ssd_spread, commit=120 | Better wear leveling, reduced write frequency |
+| **NVMe Power** | default_ps_max_latency_us=0 | Maximum performance mode |
+| **CPU Governor** | performance | Consistent high performance |
+| **Memory** | vm.dirty_ratio=15, vm.swappiness=1 | Optimized for high-speed storage and 256GB RAM |
+| **Network** | 10Gb NIC optimizations | Enhanced network performance |
+| **Btrfs** | Enhanced compression, metadata optimization | Better performance and space efficiency |
 
 ## Quick Start
 
@@ -158,21 +169,25 @@ sudo systemctl start docker
 sudo usermod -aG docker $USER
 ```
 
-#### Configure Git
+#### Configure Development Environment
 ```bash
 # Setup development directories
 mkdir -p ~/Projects/{personal,work,learning,experiments}
 mkdir -p ~/.config/{git,zsh,vim}
 mkdir -p ~/.local/bin
 
-# Configure Git with your information
+# Configure Git with performance optimizations
 git config --global user.name "pcshrosbree"
 git config --global user.email "your.email@example.com"
 git config --global init.defaultBranch main
 git config --global init.templatedir /usr/local/share/git-templates
+git config --global --add include.path ~/.gitconfig-performance
 
 # Clone the arch-partitions repository for reference
 git clone https://github.com/pcshrosbree/arch-partitions.git ~/Projects/personal/arch-partitions
+
+# Setup optimized development caches
+setup-dev-caches.sh
 
 # Setup shell (if using zsh)
 sudo pacman -S zsh oh-my-zsh-git
@@ -627,11 +642,12 @@ sudo pacman -Syu
 
 ## File System Organization
 
-### Root Filesystem (/) - Primary NVMe
+### Root Filesystem (/) - Samsung SSD 9100 PRO
 
-**Purpose**: Operating system, development tools, and active projects
-**Performance**: Highest (14,000 MB/s)
-**Compression**: zstd:1 (fastest)
+**Purpose**: Operating system, development tools, and system operations  
+**Performance**: Exceptional (14,800/13,400 MB/s, 2.6M write IOPS)  
+**Compression**: zstd:1 (fastest)  
+**Optimizations**: Enhanced wear leveling, maximum performance mode
 
 ```
 /
@@ -646,13 +662,14 @@ sudo pacman -Syu
 - Operating system files
 - Development tools (IDEs, compilers, debuggers)
 - Package managers and system utilities
-- Small, frequently accessed configuration files
+- Frequently accessed system operations
 
-### Home Filesystem (/home) - Secondary NVMe
+### Home Filesystem (/home) - TEAMGROUP T-Force Z540
 
-**Purpose**: User data, active development projects, and development services
-**Performance**: High (7,450 MB/s)
-**Compression**: zstd:3 (balanced)
+**Purpose**: User data, active development projects, and development services  
+**Performance**: Excellent (12,400/11,800 MB/s, 1.5M write IOPS)  
+**Compression**: zstd:3 (balanced)  
+**Optimizations**: Development cache optimization, container storage
 
 ```
 /home/
@@ -663,15 +680,20 @@ sudo pacman -Syu
 │   ├── Projects/           # Active development projects
 │   └── Scripts/            # Personal automation scripts
 ├── /var/lib/docker/        # Docker containers/images (nodatacow)
-└── /var/lib/libvirt/       # Virtual machines (nodatacow)
+├── /var/lib/libvirt/       # Virtual machines (nodatacow)
+├── /var/cache/builds/      # Build cache (nodatacow)
+├── /var/cache/node_modules/# Node.js dependencies (nodatacow)
+├── /var/cache/cargo/       # Rust build cache
+├── /var/cache/go/          # Go module cache
+└── /var/cache/maven/       # Maven/Gradle cache
 ```
 
 **Ideal for**:
 - Active development projects
 - IDE configurations and workspaces
 - Development databases and services
-- Personal scripts and automation
-- Documentation and notes
+- Build systems and caches
+- Container and VM storage
 
 ### Bulk Storage (/mnt/bulk) - SATA SSD
 
@@ -732,10 +754,17 @@ sudo ./setup-snapshots.sh
 ```
 
 **What it creates**:
-- Snapper configurations for root and home
-- Timeline snapshots (hourly/daily/weekly)
+- Snapper configurations for root and home filesystems
+- Timeline snapshots (hourly/daily/weekly/monthly)
 - Development snapshot timer (every 30 minutes during work hours)
+- System performance optimizations (CPU, memory, NVMe)
+- NVMe health monitoring (hourly checks)
+- Docker optimization configuration
+- Enhanced btrfs maintenance (weekly)
+- Development environment optimizations
 - Utility scripts: `dev-backup.sh`, `snapshot-monitor.sh`, `snapshot-restore.sh`
+- Enhanced monitoring: `nvme-health-monitor.sh`
+- Development cache setup: `setup-dev-caches.sh`
 - Git integration hooks
 - Automatic cleanup services
 
@@ -754,7 +783,63 @@ Enables automatic snapshots for Git operations.
 - Creates `git-snapshot` helper command
 - Tests the integration
 
-## Usage Patterns
+## Performance Optimizations
+
+### System-Level Optimizations
+
+#### CPU and Memory
+```bash
+# CPU governor set to 'performance' for consistent high performance
+# Memory settings optimized for 256GB RAM and high-speed storage
+vm.dirty_ratio = 15
+vm.dirty_background_ratio = 5
+vm.swappiness = 1
+```
+
+#### NVMe Storage Optimizations
+```bash
+# Maximum performance NVMe settings
+nvme_core.default_ps_max_latency_us=0  # Disable power saving
+ssd_spread                             # Enhanced wear leveling
+commit=120                             # Extended commit intervals
+```
+
+#### Network Optimizations
+```bash
+# 10Gb NIC optimizations
+net.core.rmem_max = 134217728
+net.core.wmem_max = 134217728
+```
+
+### Development-Specific Optimizations
+
+#### Build Cache Strategy
+- **Node.js**: `~/.npm` → `/var/cache/node_modules` (nodatacow)
+- **Rust/Cargo**: `~/.cargo` → `/var/cache/cargo`
+- **Go modules**: `~/go` → `/var/cache/go`
+- **Maven/Gradle**: `~/.m2` → `/var/cache/maven`
+
+#### Container Optimizations
+```json
+{
+  "storage-driver": "btrfs",
+  "storage-opts": ["btrfs.min_space=1G"],
+  "log-driver": "journald",
+  "default-ulimits": {
+    "nofile": {"hard": 64000, "soft": 64000}
+  }
+}
+```
+
+### Monitoring and Maintenance
+
+#### Automated Health Checks
+- **NVMe health monitoring**: Hourly temperature and wear level checks
+- **Btrfs maintenance**: Weekly defragmentation and balancing
+- **Snapshot cleanup**: Daily automated cleanup
+- **Performance monitoring**: Real-time I/O and temperature tracking
+
+### Usage Patterns
 
 ### Development Workflow
 
@@ -1050,17 +1135,56 @@ snapper -c root cleanup number
 snapper -c home delete 10-20  # Delete snapshots 10 through 20
 ```
 
-#### Performance Issues
+#### Enhanced Performance Issues
 ```bash
-# Check filesystem usage
-df -h
+# Check NVMe drive health and performance
+nvme-health-monitor.sh
 
-# Check for fragmentation
-sudo btrfs filesystem show
-sudo btrfs filesystem usage /
+# Monitor real-time performance
+watch -n 1 'iostat -x 1 1 | grep nvme'
 
-# Monitor I/O
-iotop -a
+# Check for thermal throttling
+sensors | grep -E "(nvme|CPU)"
+
+# Verify system optimizations are active
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor  # Should be 'performance'
+sysctl vm.dirty_ratio vm.swappiness  # Should be 15 and 1
+
+# Check btrfs compression efficiency
+sudo btrfs filesystem show | grep -A 5 "uuid:"
+sudo compsize /home /  # Shows compression ratios
+```
+
+#### NVMe-Specific Issues
+```bash
+# Check NVMe drive health
+sudo nvme smart-log /dev/nvme0n1  # Samsung 9100 PRO
+sudo nvme smart-log /dev/nvme1n1  # TEAMGROUP Z540
+
+# Monitor drive temperatures under load
+watch -n 5 'nvme smart-log /dev/nvme0n1 | grep temperature; nvme smart-log /dev/nvme1n1 | grep temperature'
+
+# Check for power management issues
+cat /sys/block/nvme0n1/queue/scheduler  # Should show available schedulers
+cat /sys/class/nvme/nvme*/power/control  # Should be 'on' for max performance
+```
+
+#### Development Cache Issues
+```bash
+# Verify cache optimizations are working
+ls -la ~/.npm ~/.cargo ~/go ~/.m2  # Should be symlinks to /var/cache/*
+
+# Reset cache optimizations if needed
+setup-dev-caches.sh
+
+# Check cache space usage
+df -h /var/cache
+du -sh /var/cache/{builds,node_modules,cargo,go,maven}
+
+# Clean cache if needed
+npm cache clean --force
+cargo clean
+go clean -cache
 ```
 
 #### Git Integration Issues
@@ -1100,25 +1224,37 @@ mount -o subvol=@ /dev/nvme0n1p2 /mnt/target
 cp -a /mnt/source/* /mnt/target/
 ```
 
-### Log Files
-
-#### Snapshot Logs
+#### System Logs and Monitoring
 ```bash
-# Monitoring logs
+# NVMe health monitoring logs
+journalctl -u nvme-health-monitor.timer
+tail -f /var/log/nvme-health.log
+
+# Snapshot monitoring logs
 tail -f /var/log/snapshot-monitor.log
 
-# Snapper logs
-journalctl -u snapper-timeline.timer
-journalctl -u snapper-cleanup.timer
+# Btrfs maintenance logs
+journalctl -u btrfs-maintenance.timer
+
+# System performance logs
+journalctl -k | grep btrfs
+journalctl -k | grep nvme
+dmesg | grep -E "(nvme|btrfs)"
 ```
 
-#### System Logs
+#### Performance Benchmarking
 ```bash
-# Filesystem logs
-journalctl -k | grep btrfs
+# Quick performance validation
+fio --name=random-write --ioengine=libaio --rw=randwrite --bs=4k --size=1G --numjobs=4 --runtime=60 --group_reporting --filename=/tmp/perf-test
 
-# Mount logs
-journalctl -u '*.mount'
+# Development workload simulation
+time git clone https://github.com/torvalds/linux.git /tmp/linux-test
+cd /tmp/linux-test && time make defconfig && time make -j$(nproc) modules_prepare
+
+# Compression efficiency test
+echo "test data" | btrfs-compress zstd:1
+echo "test data" | btrfs-compress zstd:3
+echo "test data" | btrfs-compress zstd:6
 ```
 
 ---
@@ -1127,7 +1263,21 @@ journalctl -u '*.mount'
 
 This storage architecture provides a robust, high-performance foundation for software development with automatic data protection, organized storage tiers, and development-optimized workflows. The three-tier approach ensures that frequently accessed data gets maximum performance while providing cost-effective bulk storage for archives and backups.
 
+**Key Performance Features:**
+- **Samsung SSD 9100 PRO**: 14,800/13,400 MB/s with 2.6M write IOPS for system operations
+- **TEAMGROUP T-Force Z540**: 12,400/11,800 MB/s with 1.5M write IOPS for development work
+- **Comprehensive optimization**: CPU, memory, NVMe, and filesystem tuning
+- **Intelligent caching**: Development tools use optimized storage locations
+- **Health monitoring**: Automated NVMe and system health tracking
+
 The automatic snapshot system provides safety nets for development work, while the Git integration seamlessly captures development milestones. The organized subvolume structure makes it easy to manage different types of data and optimize performance for specific use cases.
+
+**Performance Benefits:**
+- Exceptional random I/O performance for development workloads
+- Optimized build and cache performance with dedicated subvolumes
+- Automated health monitoring prevents performance degradation
+- System-wide optimizations for consistent high performance
+- Development cache optimization reduces build times significantly
 
 ## Repository Information
 
