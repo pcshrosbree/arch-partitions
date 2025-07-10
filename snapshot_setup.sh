@@ -191,11 +191,11 @@ EOF
     threads = true
 EOF
 
-    # Create development cache directory setup script
+    # Create development environment optimizations with memory awareness
     cat > /usr/local/bin/setup-dev-caches.sh << 'EOF'
 #!/bin/bash
 
-# Development Cache Setup Script
+# Development Cache Setup Script with DDR5-6000 Memory Optimization
 # Links common development caches to optimized storage locations
 
 set -euo pipefail
@@ -226,8 +226,61 @@ setup_cache_links() {
     fi
 }
 
+# Setup memory-optimized build environment
+setup_memory_build_env() {
+    echo "Setting up memory-optimized build environment..."
+    
+    # Create build environment script
+    cat > "$USER_HOME/.build-env" << 'BUILDEOF'
+# Memory-optimized build environment for DDR5-6000 system
+# Source this file: source ~/.build-env
+
+# Use more parallel jobs with large memory
+export MAKEFLAGS="-j$(nproc)"
+export CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)"
+
+# Increase memory limits for development tools
+export NODE_OPTIONS="--max-old-space-size=16384"
+export JAVA_OPTS="-Xmx32g -Xms8g"
+export MAVEN_OPTS="-Xmx32g -Xms8g -XX:+UseG1GC"
+export GRADLE_OPTS="-Xmx32g -Xms8g -XX:+UseG1GC"
+
+# Rust optimizations for large memory
+export CARGO_BUILD_JOBS="$(nproc)"
+export RUSTC_WRAPPER=""
+
+# Go optimizations
+export GOMAXPROCS="$(nproc)"
+export GOMEMLIMIT="32GiB"
+
+# Use RAMdisk for temporary files if available
+if [[ -d /tmp/ramdisk ]]; then
+    export TMPDIR=/tmp/ramdisk
+    export TMP=/tmp/ramdisk
+    export TEMP=/tmp/ramdisk
+fi
+
+echo "✓ Memory-optimized build environment loaded"
+echo "  - Parallel jobs: $(nproc)"
+echo "  - Node.js memory: 16GB"
+echo "  - JVM memory: 32GB"
+echo "  - Temp directory: ${TMPDIR:-/tmp}"
+BUILDEOF
+
+    # Add to shell configuration
+    if [[ -f "$USER_HOME/.bashrc" ]] && ! grep -q ".build-env" "$USER_HOME/.bashrc"; then
+        echo "source ~/.build-env" >> "$USER_HOME/.bashrc"
+    fi
+    
+    if [[ -f "$USER_HOME/.zshrc" ]] && ! grep -q ".build-env" "$USER_HOME/.zshrc"; then
+        echo "source ~/.build-env" >> "$USER_HOME/.zshrc"
+    fi
+    
+    echo "✓ Memory-optimized build environment configured"
+}
+
 # Setup common development caches
-echo "Setting up development cache optimizations..."
+echo "Setting up development cache optimizations for DDR5-6000 system..."
 
 # Node.js cache
 setup_cache_links "node_modules" "$USER_HOME/.npm"
@@ -241,8 +294,14 @@ setup_cache_links "go" "$USER_HOME/go"
 # Maven cache
 setup_cache_links "maven" "$USER_HOME/.m2"
 
+# Setup memory-optimized build environment
+setup_memory_build_env
+
+echo ""
 echo "Development cache setup complete!"
 echo "Caches are now using optimized storage locations."
+echo "Memory-optimized build environment configured."
+echo "Restart your shell or run 'source ~/.build-env' to activate optimizations."
 EOF
 
     chmod +x /usr/local/bin/setup-dev-caches.sh
@@ -961,6 +1020,7 @@ show_summary() {
     echo "✓ Automatic timeline snapshots enabled"
     echo "✓ Development snapshot timer created (every 30 minutes during work hours)"
     echo "✓ System performance optimizations applied"
+    echo "✓ DDR5-6000 memory optimizations configured"
     echo "✓ NVMe health monitoring enabled (hourly checks)"
     echo "✓ Docker optimization configuration created"
     echo "✓ Btrfs maintenance service enabled (weekly)"
@@ -968,6 +1028,7 @@ show_summary() {
     echo "✓ Backup script created: /usr/local/bin/dev-backup.sh"
     echo "✓ Monitoring script created: /usr/local/bin/snapshot-monitor.sh"
     echo "✓ NVMe health monitor: /usr/local/bin/nvme-health-monitor.sh"
+    echo "✓ Memory optimization script: /usr/local/bin/memory-optimizer.sh"
     echo "✓ Restore helper script created: /usr/local/bin/snapshot-restore.sh"
     echo "✓ Development cache setup: /usr/local/bin/setup-dev-caches.sh"
     echo "✓ Git integration hooks created"
@@ -978,22 +1039,36 @@ show_summary() {
     echo "• Create pre-deploy snapshot: dev-backup.sh predeploy myapp v1.2.3"
     echo "• List all snapshots: dev-backup.sh list"
     echo "• Monitor snapshot usage: snapshot-monitor.sh status"
-    echo "• Check NVMe health: nvme-health-monitor.sh"
+    echo "• Check memory optimization: memory-optimizer.sh status"
+    echo "• Create RAMdisk for builds: memory-optimizer.sh ramdisk 16G"
+    echo "• Benchmark memory: memory-optimizer.sh benchmark"
     echo "• Setup development caches: setup-dev-caches.sh"
     echo "• Restore files interactively: snapshot-restore.sh restore"
     echo "• Quick file restore: snapshot-restore.sh quick-restore home 42 /home/user/important.txt"
     echo ""
     echo "=== Performance Optimizations ==="
     echo "• CPU governor set to 'performance'"
-    echo "• NVMe power management optimized"
-    echo "• Memory and I/O settings tuned for high-speed storage"
+    echo "• NVMe power management optimized for maximum performance"
+    echo "• Memory settings tuned for DDR5-6000 CL34 (256GB)"
+    echo "• Transparent Huge Pages enabled for large memory workloads"
+    echo "• Development tools configured for high-memory builds"
     echo "• Network settings optimized for 10Gb NIC"
-    echo "• Docker configured for btrfs optimization"
+    echo "• Docker configured for btrfs and memory optimization"
     echo "• VS Code and Git configurations optimized"
+    echo ""
+    echo "=== Memory-Specific Features ==="
+    echo "• Large memory buffers enabled (vm.dirty_ratio=20)"
+    echo "• VFS cache pressure optimized for development workloads"
+    echo "• Huge pages configured for performance (1024 x 2MB)"
+    echo "• Development tools configured with increased memory limits"
+    echo "• RAMdisk support for ultra-fast temporary operations"
     echo ""
     echo "=== Post-Installation Tasks ==="
     echo "• Run 'grub-mkconfig -o /boot/grub/grub.cfg' to apply GRUB optimizations"
     echo "• Run 'setup-dev-caches.sh' as your user to optimize development caches"
+    echo "• Run 'memory-optimizer.sh optimize' to apply runtime memory optimizations"
+    echo "• Consider creating a RAMdisk with 'memory-optimizer.sh ramdisk 16G' for builds"
+    echo "• Source ~/.build-env in your shell for memory-optimized build environment"
     echo "• Restart system to apply all kernel parameter optimizations"
     echo ""
     echo "=== Git Integration ==="
@@ -1028,6 +1103,7 @@ main() {
     create_restore_helper
     create_git_hooks
     create_system_optimizations
+    create_memory_optimizations
     create_docker_optimization
     create_btrfs_maintenance
     create_enhanced_monitoring

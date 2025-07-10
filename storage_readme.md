@@ -1,4 +1,4 @@
-# Development Workstation Storage Architecture
+**Performance# Development Workstation Storage Architecture
 
 A comprehensive btrfs-based storage solution optimized for software development with automatic snapshots, performance optimization, and organized data management.
 
@@ -31,7 +31,7 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 ## Hardware Specifications
 
 - **CPU**: AMD Ryzen 9950X
-- **RAM**: 256GB DDR5
+- **RAM**: 256GB G.SKILL Flare X5 DDR5-6000 (CL34-44-44-96 @ 1.35V)
 - **Motherboard**: ASUS ROG Crosshair X870E Hero (AMD X870E AM5 ATX)
 - **Graphics**: AMD Radeon RX 9070 XT (PCIe 5.0 x16)
 - **Storage**: 
@@ -89,7 +89,8 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 | **Mount Options** | ssd_spread, commit=120 | Better wear leveling, reduced write frequency |
 | **NVMe Power** | default_ps_max_latency_us=0 | Maximum performance mode |
 | **CPU Governor** | performance | Consistent high performance |
-| **Memory** | vm.dirty_ratio=15, vm.swappiness=1 | Optimized for high-speed storage and 256GB RAM |
+| **Memory** | vm.dirty_ratio=20, vm.swappiness=1, huge pages | Optimized for DDR5-6000 and large datasets |
+| **Development Tools** | Increased memory limits, parallel builds | Utilizes 256GB for faster compilation |
 | **Network** | 10Gb NIC optimizations | Enhanced network performance |
 | **Btrfs** | Enhanced compression, metadata optimization | Better performance and space efficiency |
 
@@ -804,11 +805,30 @@ ssd_spread                             # Enhanced wear leveling
 commit=120                             # Extended commit intervals
 ```
 
-#### Network Optimizations
+#### Memory and Development Optimizations
 ```bash
-# 10Gb NIC optimizations
-net.core.rmem_max = 134217728
-net.core.wmem_max = 134217728
+# DDR5-6000 specific optimizations
+vm.dirty_ratio = 20                    # Higher ratio for large memory
+vm.dirty_background_ratio = 10         # Increased background ratio
+vm.vfs_cache_pressure = 50             # Optimize VFS cache for development
+vm.min_free_kbytes = 1048576           # 1GB minimum free memory
+vm.nr_hugepages = 1024                 # 2GB huge pages for performance
+
+# Development tool memory limits optimized for 256GB
+export NODE_OPTIONS="--max-old-space-size=16384"    # 16GB for Node.js
+export JAVA_OPTS="-Xmx32g -Xms8g"                   # 32GB for JVM
+export MAVEN_OPTS="-Xmx32g -Xms8g -XX:+UseG1GC"    # Optimized Maven
+export GOMEMLIMIT="32GiB"                           # Go memory limit
+```
+
+#### RAMdisk for Ultra-Fast Builds
+```bash
+# Create 16GB RAMdisk for temporary build operations
+memory-optimizer.sh ramdisk 16G
+
+# Use RAMdisk for builds (automatically configured)
+export TMPDIR=/tmp/ramdisk
+cd ~/Projects/large-project && make -j$(nproc)  # Uses RAMdisk
 ```
 
 ### Development-Specific Optimizations
@@ -1273,11 +1293,14 @@ This storage architecture provides a robust, high-performance foundation for sof
 The automatic snapshot system provides safety nets for development work, while the Git integration seamlessly captures development milestones. The organized subvolume structure makes it easy to manage different types of data and optimize performance for specific use cases.
 
 **Performance Benefits:**
-- Exceptional random I/O performance for development workloads
-- Optimized build and cache performance with dedicated subvolumes
-- Automated health monitoring prevents performance degradation
-- System-wide optimizations for consistent high performance
-- Development cache optimization reduces build times significantly
+- **Exceptional storage performance**: Samsung 9100 PRO with 2.6M write IOPS for system operations
+- **High-speed development storage**: TEAMGROUP Z540 with 1.5M write IOPS for active development
+- **DDR5-6000 memory optimization**: Full utilization of 256GB high-speed memory for builds and caches
+- **RAMdisk support**: Ultra-fast temporary operations using DDR5-6000 speeds
+- **Intelligent caching**: Development tools use optimized storage locations with memory awareness
+- **Automated health monitoring**: Prevents performance degradation of both storage and memory
+- **Memory-aware build systems**: Development tools configured for large memory workloads
+- **Parallel processing optimization**: Full utilization of 24-core CPU with large memory buffers
 
 ## Repository Information
 
