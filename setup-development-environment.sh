@@ -191,11 +191,11 @@ EOF
     threads = true
 EOF
 
-    # Create development environment optimizations with memory awareness
+    # Create development environment optimizations with memory awareness and Podman aliases
     cat > /usr/local/bin/setup-dev-caches.sh << 'EOF'
 #!/bin/bash
 
-# Development Cache Setup Script with DDR5-6000 Memory Optimization
+# Development Cache Setup Script with DDR5-6000 Memory Optimization and Podman aliases
 # Links common development caches to optimized storage locations
 
 set -euo pipefail
@@ -226,6 +226,98 @@ setup_cache_links() {
     fi
 }
 
+# Setup Podman aliases for Docker compatibility
+setup_podman_aliases() {
+    echo "Setting up Podman aliases for Docker compatibility..."
+    
+    # Create alias configuration
+    cat > "$USER_HOME/.podman-aliases" << 'ALIASES'
+# Podman aliases for Docker compatibility
+# Source this file: source ~/.podman-aliases
+
+# Core container commands
+alias docker='podman'
+alias docker-compose='podman-compose'
+
+# Container management
+alias docker-build='podman build'
+alias docker-run='podman run'
+alias docker-exec='podman exec'
+alias docker-logs='podman logs'
+alias docker-ps='podman ps'
+alias docker-stop='podman stop'
+alias docker-start='podman start'
+alias docker-restart='podman restart'
+alias docker-rm='podman rm'
+alias docker-rmi='podman rmi'
+
+# Image management
+alias docker-pull='podman pull'
+alias docker-push='podman push'
+alias docker-images='podman images'
+alias docker-tag='podman tag'
+alias docker-save='podman save'
+alias docker-load='podman load'
+alias docker-import='podman import'
+alias docker-export='podman export'
+
+# Network management
+alias docker-network='podman network'
+
+# Volume management  
+alias docker-volume='podman volume'
+
+# System commands
+alias docker-info='podman info'
+alias docker-version='podman version'
+alias docker-system='podman system'
+
+# Advanced Podman features with docker-like names
+alias docker-pod='podman pod'
+alias docker-generate='podman generate'
+alias docker-play='podman play'
+
+# Development shortcuts
+alias dps='podman ps'
+alias dimages='podman images'
+alias dlog='podman logs'
+alias dexec='podman exec -it'
+alias dbuild='podman build'
+alias drun='podman run --rm -it'
+alias dstop='podman stop $(podman ps -q)'
+alias dclean='podman system prune -f'
+alias dcleanall='podman system prune -af'
+
+# Docker Compose equivalents
+alias dc='podman-compose'
+alias dcup='podman-compose up'
+alias dcdown='podman-compose down'
+alias dcbuild='podman-compose build'
+alias dclogs='podman-compose logs'
+alias dcps='podman-compose ps'
+
+# Development environment helpers
+alias dev-container='podman run --rm -it -v $(pwd):/workspace -w /workspace'
+alias dev-node='podman run --rm -it -v $(pwd):/workspace -w /workspace node:latest'
+alias dev-python='podman run --rm -it -v $(pwd):/workspace -w /workspace python:latest'
+alias dev-golang='podman run --rm -it -v $(pwd):/workspace -w /workspace golang:latest'
+alias dev-rust='podman run --rm -it -v $(pwd):/workspace -w /workspace rust:latest'
+
+echo "✓ Podman aliases loaded (Docker compatibility enabled)"
+ALIASES
+
+    # Add to shell configurations
+    for shell_config in "$USER_HOME/.bashrc" "$USER_HOME/.zshrc"; do
+        if [[ -f "$shell_config" ]] && ! grep -q ".podman-aliases" "$shell_config"; then
+            echo "" >> "$shell_config"
+            echo "# Podman aliases for Docker compatibility" >> "$shell_config"
+            echo "source ~/.podman-aliases" >> "$shell_config"
+        fi
+    done
+    
+    echo "✓ Podman aliases configured for Docker compatibility"
+}
+
 # Setup memory-optimized build environment
 setup_memory_build_env() {
     echo "Setting up memory-optimized build environment..."
@@ -253,6 +345,24 @@ export RUSTC_WRAPPER=""
 export GOMAXPROCS="$(nproc)"
 export GOMEMLIMIT="32GiB"
 
+# Python development optimizations
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+if command -v pyenv &> /dev/null; then
+    eval "$(pyenv init -)"
+fi
+
+# Poetry configuration for development
+export POETRY_CACHE_DIR="/var/cache/poetry/$(whoami)"
+export POETRY_VENV_IN_PROJECT=true
+
+# uv configuration for ultra-fast Python packages
+export UV_CACHE_DIR="/var/cache/uv/$(whoami)"
+
+# Container development with Podman
+export CONTAINER_RUNTIME="podman"
+export BUILDAH_FORMAT="docker"
+
 # Use RAMdisk for temporary files if available
 if [[ -d /tmp/ramdisk ]]; then
     export TMPDIR=/tmp/ramdisk
@@ -264,6 +374,8 @@ echo "✓ Memory-optimized build environment loaded"
 echo "  - Parallel jobs: $(nproc)"
 echo "  - Node.js memory: 16GB"
 echo "  - JVM memory: 32GB"
+echo "  - Python tools: pyenv, poetry, uv (optimized caches)"
+echo "  - Container runtime: ${CONTAINER_RUNTIME}"
 echo "  - Temp directory: ${TMPDIR:-/tmp}"
 BUILDEOF
 
@@ -294,19 +406,63 @@ setup_cache_links "go" "$USER_HOME/go"
 # Maven cache
 setup_cache_links "maven" "$USER_HOME/.m2"
 
+# Python development caches
+setup_cache_links "pyenv" "$USER_HOME/.pyenv/cache"
+setup_cache_links "poetry" "$USER_HOME/.cache/pypoetry"  
+setup_cache_links "uv" "$USER_HOME/.cache/uv"
+
+# Setup Podman aliases
+setup_podman_aliases
+
 # Setup memory-optimized build environment
 setup_memory_build_env
 
 echo ""
 echo "Development cache setup complete!"
 echo "Caches are now using optimized storage locations."
+echo "Podman aliases configured for Docker compatibility."
 echo "Memory-optimized build environment configured."
-echo "Restart your shell or run 'source ~/.build-env' to activate optimizations."
+echo "Restart your shell or run 'source ~/.podman-aliases && source ~/.build-env' to activate optimizations."
 EOF
 
     chmod +x /usr/local/bin/setup-dev-caches.sh
     
-    log "✓ Development environment optimizations created"
+# Create development cache directory setup script
+mkdir -p /etc/skel/.cache/pyenv
+mkdir -p /etc/skel/.cache/poetry
+mkdir -p /etc/skel/.cache/uv
+
+# Add Python tools cache to the existing cache setup
+cat >> /etc/skel/.cache-setup.sh << 'EOF'
+
+# Python development tools cache optimization
+setup_python_caches() {
+    echo "Setting up Python development caches..."
+    
+    # pyenv cache
+    if [[ ! -L "$HOME/.pyenv/cache" ]] && [[ -d "/var/cache/pyenv/$(whoami)" ]]; then
+        mkdir -p "$HOME/.pyenv"
+        ln -sf "/var/cache/pyenv/$(whoami)" "$HOME/.pyenv/cache"
+        echo "✓ Linked pyenv cache to optimized storage"
+    fi
+    
+    # poetry cache
+    if [[ ! -L "$HOME/.cache/pypoetry" ]] && [[ -d "/var/cache/poetry/$(whoami)" ]]; then
+        mkdir -p "$HOME/.cache"
+        ln -sf "/var/cache/poetry/$(whoami)" "$HOME/.cache/pypoetry"
+        echo "✓ Linked poetry cache to optimized storage"
+    fi
+    
+    # uv cache
+    if [[ ! -L "$HOME/.cache/uv" ]] && [[ -d "/var/cache/uv/$(whoami)" ]]; then
+        mkdir -p "$HOME/.cache"
+        ln -sf "/var/cache/uv/$(whoami)" "$HOME/.cache/uv"
+        echo "✓ Linked uv cache to optimized storage"
+    fi
+}
+
+setup_python_caches
+EOF
 }#!/bin/bash
 
 # Development Environment Setup Script
@@ -354,7 +510,7 @@ check_root() {
 
 # Install required packages
 install_packages() {
-    log "Installing snapshot management and optimization packages..."
+    log "Installing development environment packages..."
     
     if command -v apt-get &> /dev/null; then
         apt-get update
@@ -1025,7 +1181,7 @@ show_summary() {
     echo "✓ Triple Dell U4320Q 4K display optimizations configured"
     echo "✓ Logitech MX Master 3S mouse optimizations configured"
     echo "✓ NVMe health monitoring enabled (hourly checks)"
-    echo "✓ Docker optimization configuration created"
+    echo "✓ Podman optimization configuration created"
     echo "✓ Btrfs maintenance service enabled (weekly)"
     echo "✓ Development environment optimizations created"
     echo "✓ Backup script created: /usr/local/bin/dev-backup.sh"
@@ -1065,7 +1221,7 @@ show_summary() {
     echo "• Transparent Huge Pages enabled for large memory workloads"
     echo "• Development tools configured for high-memory builds"
     echo "• Network settings optimized for 10Gb NIC"
-    echo "• Docker configured for btrfs and memory optimization"
+    echo "• Podman configured for btrfs and memory optimization"
     echo "• VS Code and Git configurations optimized"
     echo ""
     echo "=== Memory-Specific Features ==="
@@ -1134,7 +1290,7 @@ main() {
     create_memory_optimizations
     create_display_optimizations
     create_input_optimizations
-    create_docker_optimization
+    create_podman_optimization
     create_btrfs_maintenance
     create_enhanced_monitoring
     create_dev_optimizations

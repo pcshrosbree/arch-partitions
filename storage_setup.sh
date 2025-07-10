@@ -165,7 +165,7 @@ create_subvolumes() {
     log "Creating home filesystem subvolumes..."
     btrfs subvolume create /mnt/home/@home
     btrfs subvolume create /mnt/home/@home_snapshots
-    btrfs subvolume create /mnt/home/@docker
+    btrfs subvolume create /mnt/home/@containers
     btrfs subvolume create /mnt/home/@vms
     btrfs subvolume create /mnt/home/@tmp_builds
     btrfs subvolume create /mnt/home/@node_modules
@@ -203,13 +203,16 @@ setup_mounts() {
     mkdir -p /mnt/target/opt
     mkdir -p /mnt/target/usr/local
     mkdir -p /mnt/target/mnt/bulk
-    mkdir -p /mnt/target/var/lib/docker
+    mkdir -p /mnt/target/var/lib/containers
     mkdir -p /mnt/target/var/lib/libvirt
     mkdir -p /mnt/target/var/cache/builds
     mkdir -p /mnt/target/var/cache/node_modules
     mkdir -p /mnt/target/var/cache/cargo
     mkdir -p /mnt/target/var/cache/go
     mkdir -p /mnt/target/var/cache/maven
+    mkdir -p /mnt/target/var/cache/pyenv
+    mkdir -p /mnt/target/var/cache/poetry
+    mkdir -p /mnt/target/var/cache/uv
     
     # Get UUIDs
     ROOT_UUID=$(blkid -s UUID -o value "${PRIMARY_NVME}p2")
@@ -242,8 +245,8 @@ setup_mounts() {
     # Home filesystem with enhanced performance
     mount -o defaults,noatime,compress=zstd:3,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@home \
         "${SECONDARY_NVME}p1" /mnt/target/home
-    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@docker,nodatacow \
-        "${SECONDARY_NVME}p1" /mnt/target/var/lib/docker
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@containers,nodatacow \
+        "${SECONDARY_NVME}p1" /mnt/target/var/lib/containers
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@vms,nodatacow \
         "${SECONDARY_NVME}p1" /mnt/target/var/lib/libvirt
     
@@ -258,6 +261,12 @@ setup_mounts() {
         "${SECONDARY_NVME}p1" /mnt/target/var/cache/go
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@maven_cache \
         "${SECONDARY_NVME}p1" /mnt/target/var/cache/maven
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@pyenv_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/pyenv
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@poetry_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/poetry
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@uv_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/uv
     
     # Bulk storage
     mount -o defaults,noatime,compress=zstd:6,space_cache=v2,ssd,discard=async \
@@ -284,7 +293,7 @@ UUID=$ROOT_UUID /usr/local btrfs defaults,noatime,compress=zstd:1,space_cache=v2
 
 # Home filesystem (HOME) - TEAMGROUP Z540 with performance optimizations
 UUID=$HOME_UUID /home btrfs defaults,noatime,compress=zstd:3,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@home 0 2
-UUID=$HOME_UUID /var/lib/docker btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@docker,nodatacow 0 0
+UUID=$HOME_UUID /var/lib/containers btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@containers,nodatacow 0 0
 UUID=$HOME_UUID /var/lib/libvirt btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@vms,nodatacow 0 0
 
 # Development cache mounts (HOME) - TEAMGROUP Z540
@@ -293,6 +302,9 @@ UUID=$HOME_UUID /var/cache/node_modules btrfs defaults,noatime,space_cache=v2,ss
 UUID=$HOME_UUID /var/cache/cargo btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@cargo_cache 0 0
 UUID=$HOME_UUID /var/cache/go btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@go_cache 0 0
 UUID=$HOME_UUID /var/cache/maven btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@maven_cache 0 0
+UUID=$HOME_UUID /var/cache/pyenv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@pyenv_cache 0 0
+UUID=$HOME_UUID /var/cache/poetry btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@poetry_cache 0 0
+UUID=$HOME_UUID /var/cache/uv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@uv_cache 0 0
 
 # Bulk storage (BULK)
 UUID=$BULK_UUID /mnt/bulk btrfs defaults,noatime,compress=zstd:6,space_cache=v2,ssd,discard=async 0 2

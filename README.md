@@ -82,7 +82,7 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 ├── /usr/local (@usr_local subvolume)
 ├── /home (HOME filesystem on TEAMGROUP Z540)
 │   ├── @home (user directories)
-│   ├── @docker (Docker storage, nodatacow)
+│   ├── @containers (Container storage, nodatacow)
 │   ├── @vms (VM storage, nodatacow)
 │   ├── @tmp_builds (build cache, nodatacow)
 │   ├── @node_modules (Node.js cache, nodatacow)
@@ -193,19 +193,29 @@ After successfully installing Arch Linux and configuring your desktop environmen
 #### Install Development Tools
 ```bash
 # Install development packages
-sudo pacman -S docker docker-compose podman
+sudo pacman -S podman podman-compose buildah skopeo
 sudo pacman -S nodejs npm python python-pip rust go
-sudo pacman -S code intellij-idea-community-edition
+sudo pacman -S code pyenv python-poetry
+
+# Install Python development tools
+# pyenv for Python version management
+curl https://pyenv.run | bash
+
+# poetry for Python dependency management (already installed via pacman)
+# uv for ultra-fast Python package installer
+pip install --user uv
 
 # Install AUR development tools
 yay -S visual-studio-code-bin
-yay -S jetbrains-toolbox
+yay -S jetbrains-toolbox           # Use toolbox to install IntelliJ IDEA Ultimate
 yay -S nvm
 
-# Enable and start Docker
-sudo systemctl enable docker
-sudo systemctl start docker
-sudo usermod -aG docker $USER
+# Enable and start Podman services
+sudo systemctl enable podman-auto-update.timer
+sudo usermod -aG wheel $USER
+
+# Setup development environment with Podman aliases
+setup-dev-caches.sh  # This now includes Docker→Podman aliases
 ```
 
 #### Configure Development Environment
@@ -216,8 +226,8 @@ mkdir -p ~/.config/{git,zsh,vim}
 mkdir -p ~/.local/bin
 
 # Configure Git with performance optimizations
-git config --global user.name "pcshrosbree"
-git config --global user.email "your.email@example.com"
+git config --global user.name "Peter Shrosbree"
+git config --global user.email "49728166-pcshrosbree@users.noreply.github.com"
 git config --global init.defaultBranch main
 git config --global init.templatedir /usr/local/share/git-templates
 git config --global --add include.path ~/.gitconfig-performance
@@ -225,8 +235,46 @@ git config --global --add include.path ~/.gitconfig-performance
 # Clone the arch-partitions repository for reference
 git clone https://github.com/pcshrosbree/arch-partitions.git ~/Projects/personal/arch-partitions
 
-# Setup optimized development caches
+# Setup optimized development caches and Podman aliases
 setup-dev-caches.sh
+
+#### Python Development Workflows
+```bash
+# Modern Python development with optimized tools
+# All caches use high-speed NVMe storage for maximum performance
+
+# pyenv for Python version management
+pyenv install 3.12.0 3.11.7 3.10.13      # Install multiple Python versions
+pyenv local 3.12.0                        # Set project-specific version
+
+# poetry for dependency management (optimized cache)
+poetry new my-python-project
+cd my-python-project
+poetry add fastapi uvicorn                # Fast package installation via cache
+poetry install                            # Install dependencies with cache optimization
+
+# uv for ultra-fast package operations
+uv pip install requests                   # Lightning-fast package installation
+uv pip sync requirements.txt              # Sync packages at high speed
+
+# Combined workflow with containers
+docker run --rm -it \
+  -v ~/.pyenv:/root/.pyenv \
+  -v ~/.cache/pypoetry:/root/.cache/pypoetry \
+  -v ~/.cache/uv:/root/.cache/uv \
+  -v $(pwd):/workspace -w /workspace \
+  python:3.12
+
+# IntelliJ IDEA Ultimate development
+# - Full Python support with Professional features
+# - Database tools integration
+# - Advanced debugging and profiling
+# - Enterprise framework support
+```
+
+# Activate development environment
+source ~/.podman-aliases  # Docker compatibility aliases
+source ~/.build-env       # Memory-optimized build environment
 
 # Setup shell (if using zsh)
 sudo pacman -S zsh oh-my-zsh-git
@@ -718,13 +766,16 @@ sudo pacman -Syu
 │   ├── Documents/          # Documentation and notes
 │   ├── Projects/           # Active development projects
 │   └── Scripts/            # Personal automation scripts
-├── /var/lib/docker/        # Docker containers/images (nodatacow)
+├── /var/lib/containers/    # Container storage (nodatacow)
 ├── /var/lib/libvirt/       # Virtual machines (nodatacow)
 ├── /var/cache/builds/      # Build cache (nodatacow)
 ├── /var/cache/node_modules/# Node.js dependencies (nodatacow)
 ├── /var/cache/cargo/       # Rust build cache
 ├── /var/cache/go/          # Go module cache
-└── /var/cache/maven/       # Maven/Gradle cache
+├── /var/cache/maven/       # Maven/Gradle cache
+├── /var/cache/pyenv/       # Python version management cache
+├── /var/cache/poetry/      # Python dependency management cache
+└── /var/cache/uv/          # Ultra-fast Python package cache
 ```
 
 **Ideal for**:
