@@ -141,7 +141,7 @@ xset m 2/1 4                              # Mouse acceleration: 2/1 multiplier, 
 1. **Setup Storage Architecture** (⚠️ **DESTROYS ALL DATA** ⚠️)
 2. **Install Arch Linux** using archinstall
 3. **Configure Desktop Environment** (GNOME or Hyprland)
-4. **Setup Snapshots** for automatic backups
+4. **Setup Development Environment** with comprehensive optimizations
 5. **Enable Git Integration** (optional)
 
 ## Post-Installation Setup
@@ -153,7 +153,7 @@ After successfully installing Arch Linux and configuring your desktop environmen
 1. **Download and run the snapshot setup script**:
    ```bash
    # Download the script from GitHub
-   curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/setup-snapshots.sh
+   curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/setup-development-environment.sh
    chmod +x setup-snapshots.sh
    
    # Run as root
@@ -181,6 +181,11 @@ After successfully installing Arch Linux and configuring your desktop environmen
    # Check snapshots
    sudo snapper -c root list
    sudo snapper -c home list
+   
+   # Check hardware optimizations
+   display-optimizer.sh status
+   mouse-optimizer.sh status
+   memory-optimizer.sh status
    ```
 
 ### Development Environment Setup
@@ -778,26 +783,27 @@ sudo ./setup-storage.sh
 - Generates optimized `/etc/fstab`
 - Mounts everything at `/mnt/target`
 
-### setup-snapshots.sh
+### setup-development-environment.sh
 
-Configures automatic snapshots and development tools.
+Configures comprehensive development environment with snapshots, performance optimizations, and hardware tuning.
 
 ```bash
-# Run after OS installation and first boot
-sudo ./setup-snapshots.sh
+# Run after OS installation and desktop configuration
+sudo ./setup-development-environment.sh
 ```
 
 **What it creates**:
 - Snapper configurations for root and home filesystems
 - Timeline snapshots (hourly/daily/weekly/monthly)
 - Development snapshot timer (every 30 minutes during work hours)
-- System performance optimizations (CPU, memory, NVMe)
+- System performance optimizations (CPU, memory, NVMe, graphics)
+- Hardware-specific optimizations (DDR5-6000, triple 4K displays, MX Master 3S)
 - NVMe health monitoring (hourly checks)
 - Docker optimization configuration
 - Enhanced btrfs maintenance (weekly)
 - Development environment optimizations
 - Utility scripts: `dev-backup.sh`, `snapshot-monitor.sh`, `snapshot-restore.sh`
-- Enhanced monitoring: `nvme-health-monitor.sh`
+- Hardware monitoring: `nvme-health-monitor.sh`, `display-optimizer.sh`, `mouse-optimizer.sh`
 - Development cache setup: `setup-dev-caches.sh`
 - Git integration hooks
 - Automatic cleanup services
