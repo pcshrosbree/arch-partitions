@@ -1,54 +1,27 @@
-#### Install Development Tools
-```bash
-# Install core development packages
-sudo pacman -S podman podman-compose buildah skopeo
-sudo pacman -S nodejs npm python python-pip rust go
-sudo pacman -S code pyenv python-poetry dotnet-sdk aspnet-runtime
-sudo pacman -S kitty alacritty  # Additional terminal options
-sudo pacman -S jdk-openjdk zig  # Java for Clojure, Zig compiler
-
-# Install Python development tools
-# pyenv for Python version management
-curl https://pyenv.run | bash
-
-# poetry for Python dependency management (already installed via pacman)
-# uv for ultra-fast Python package installer
-pip install --user uv
-
-# Install .NET development tools
-# dotnet-sdk already installed via pacman
-# Install additional .NET tools
-dotnet tool install#### Automated Health Checks
-- **NVMe health monitoring**: Hourly temperature and wear level checks
-- **Memory performance monitoring**: DDR5-6000 speed and stability verification
-- **GPU monitoring**: Temperature, VRAM usage, and performance tracking
-- **Display optimization**: Automatic GPU performance settings on boot
-- **Btrfs maintenance**: Weekly defragmentation and balancing
-- **Snapshot cleanup**: Daily automated cleanup
-- **Performance monitoring**: Real-time I/O, memory usage, and temperature tracking
-
-#### Manual Optimization Commands
-```bash
-# Check display configuration and GPU status
-display**Performance# Development Workstation Storage Architecture
+# Development Workstation Storage Architecture
 
 A comprehensive btrfs-based storage solution optimized for software development with automatic snapshots, performance optimization, and organized data management.
 
 **Repository**: https://github.com/pcshrosbree/arch-partitions  
-**Author**: pcshrosbree
+**Author**: Peter Shrosbree
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Hardware Specifications](#hardware-specifications)
 - [Storage Architecture](#storage-architecture)
-- [Quick Start](#quick-start)
+- [Performance Optimizations](#performance-optimizations)
+- [Installation Guide](#installation-guide)
+- [Post-Installation Setup](#post-installation-setup)
+- [Desktop Environment Setup](#desktop-environment-setup)
+- [Development Environment](#development-environment)
 - [File System Organization](#file-system-organization)
-- [Script Documentation](#script-documentation)
-- [Usage Patterns](#usage-patterns)
 - [Snapshot Management](#snapshot-management)
 - [Git Integration](#git-integration)
+- [Usage Patterns](#usage-patterns)
 - [Maintenance](#maintenance)
 - [Troubleshooting](#troubleshooting)
+- [Script Documentation](#script-documentation)
 
 ## Overview
 
@@ -70,7 +43,7 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 - **Input**: Logitech MX Master 3S with Logi Bolt USB Receiver
 - **Storage**: 
   - **Primary**: Samsung SSD 9100 PRO - 4TB NVMe (PCIe 5.0) - 14,800/13,400 MB/s, 2.2M/2.6M IOPS
-  - **Secondary**: TEAMGROUP T-Force Z540 - 4TB NVMe (PCIe 4.0) - 12,400/11,800 MB/s, 1.4M/1.5M IOPS
+  - **Secondary**: TEAMGROUP T-Force Z540 - 4TB NVMe (PCIe 5.0) - 12,400/11,800 MB/s, 1.4M/1.5M IOPS
   - **Bulk**: 8TB SATA SSD
 - **Network**: Intel X520-DA2 10Gb NIC (PCIe 5.0 x8)
 
@@ -78,17 +51,13 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 
 ### Physical Layout
 
-```
-```
-┌─────────────────────┬─────────────────────┬─────────────────────┐
-│   PRIMARY NVMe      │   SECONDARY NVMe    │    BULK SATA       │
-│   (PCIe 5.0)        │   (PCIe 4.0)        │   (SATA SSD)        │
-│ Samsung 9100 PRO    │ TEAMGROUP Z540      │   ~500 MB/s         │
-│ 14,800/13,400 MB/s  │ 12,400/11,800 MB/s  │   8TB               │
-│ 2.2M/2.6M IOPS      │ 1.4M/1.5M IOPS      │                     │
-│   4TB               │   4TB               │                     │
-└─────────────────────┴─────────────────────┴─────────────────────┘
-```
+| PRIMARY NVMe       | SEONDARY NVMe      | BULK SATA       |
+| ------------------ | ------------------ | --------------- |
+| PCIe 5.0 x4        | PCIe 5.0 x4        | SATA III SSD    |
+| Samsung 9100 PRO   | TEAMGROUP Z540     | SAMSUNG 870 QVO |
+| 14,800/13,400 MB/s | 12,400/11,800 MB/s | 530/560 MB/s    |
+| 2.2M/2.6M IOPS     | 1.4M/1.5M IOPS     |                 |
+| 4TB                | 4TB                | 8TB             |
 
 ### Logical Layout
 
@@ -116,7 +85,9 @@ All filesystems use btrfs with automatic snapshots, compression, and development
     └── @backup (Backup storage)
 ```
 
-### Performance Optimizations
+## Performance Optimizations
+
+### System-Level Optimizations
 
 | Component | Optimization | Benefit |
 |-----------|--------------|---------|
@@ -125,6 +96,44 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 | **CPU Governor** | performance | Consistent high performance |
 | **Memory** | vm.dirty_ratio=20, vm.swappiness=1, huge pages | Optimized for DDR5-6000 and large datasets |
 | **Development Tools** | Increased memory limits, parallel builds | Utilizes 256GB for faster compilation |
+| **Graphics** | amdgpu performance mode, memory/core OC | Optimized for triple 4K displays |
+| **Network** | 10Gb NIC optimizations | Enhanced network performance |
+| **Btrfs** | Enhanced compression, metadata optimization | Better performance and space efficiency |
+
+### Hardware-Specific Optimizations
+
+#### CPU and Memory
+```bash
+# CPU governor set to 'performance' for consistent high performance
+# Memory settings optimized for 256GB RAM and high-speed storage
+vm.dirty_ratio = 15
+vm.dirty_background_ratio = 5
+vm.swappiness = 1
+```
+
+#### NVMe Storage Optimizations
+```bash
+# Maximum performance NVMe settings
+nvme_core.default_ps_max_latency_us=0  # Disable power saving
+ssd_spread                             # Enhanced wear leveling
+commit=120                             # Extended commit intervals
+```
+
+#### Memory and Development Optimizations
+```bash
+# DDR5-6000 specific optimizations
+vm.dirty_ratio = 20                    # Higher ratio for large memory
+vm.dirty_background_ratio = 10         # Increased background ratio
+vm.vfs_cache_pressure = 50             # Optimize VFS cache for development
+vm.min_free_kbytes = 1048576           # 1GB minimum free memory
+vm.nr_hugepages = 1024                 # 2GB huge pages for performance
+
+# Development tool memory limits optimized for 256GB
+export NODE_OPTIONS="--max-old-space-size=16384"    # 16GB for Node.js
+export JAVA_OPTS="-Xmx32g -Xms8g"                   # 32GB for JVM
+export MAVEN_OPTS="-Xmx32g -Xms8g -XX:+UseG1GC"     # Optimized Maven
+export GOMEMLIMIT="32GiB"                           # Go memory limit
+```
 
 #### Input Device Optimizations
 ```bash
@@ -143,11 +152,33 @@ xset m 2/1 4                              # Mouse acceleration: 2/1 multiplier, 
 # Thumb wheel: Workspace/window switching
 # Gesture button: Context-specific actions
 ```
-| **Graphics** | amdgpu performance mode, memory/core OC | Optimized for triple 4K displays |
-| **Network** | 10Gb NIC optimizations | Enhanced network performance |
-| **Btrfs** | Enhanced compression, metadata optimization | Better performance and space efficiency |
 
-## Quick Start
+#### Automated Health Checks
+- **NVMe health monitoring**: Hourly temperature and wear level checks
+- **Memory performance monitoring**: DDR5-6000 speed and stability verification
+- **GPU monitoring**: Temperature, VRAM usage, and performance tracking
+- **Display optimization**: Automatic GPU performance settings on boot
+- **Btrfs maintenance**: Weekly defragmentation and balancing
+- **Snapshot cleanup**: Daily automated cleanup
+- **Performance monitoring**: Real-time I/O, memory usage, and temperature tracking
+
+#### Manual Optimization Commands
+```bash
+# Check display configuration and GPU status
+display-optimizer.sh status
+
+# Check memory performance
+memory-optimizer.sh benchmark
+
+# RAMdisk for ultra-fast builds
+memory-optimizer.sh ramdisk 16G
+
+# Use RAMdisk for builds (automatically configured)
+export TMPDIR=/tmp/ramdisk
+cd ~/Projects/large-project && make -j$(nproc)  # Uses RAMdisk
+```
+
+## Installation Guide
 
 ### Prerequisites
 
@@ -155,270 +186,6 @@ xset m 2/1 4                              # Mouse acceleration: 2/1 multiplier, 
 - AMD Radeon RX 9070 XT graphics card
 - Root access for initial setup
 - Arch Linux installation media
-
-### Installation Overview
-
-1. **Setup Storage Architecture** (⚠️ **DESTROYS ALL DATA** ⚠️)
-2. **Install Arch Linux** using archinstall
-3. **Configure Desktop Environment** (GNOME or Hyprland)
-4. **Setup Development Environment** with comprehensive optimizations
-5. **Enable Git Integration** (optional)
-
-## Post-Installation Setup
-
-### Complete Storage and Snapshot Configuration
-
-After successfully installing Arch Linux and configuring your desktop environment:
-
-1. **Download and run the snapshot setup script**:
-   ```bash
-   # Download the script from GitHub
-   curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/setup-development-environment.sh
-   chmod +x setup-snapshots.sh
-   
-   # Run as root
-   sudo ./setup-snapshots.sh
-   ```
-
-2. **Enable Git integration** (optional):
-   ```bash
-   # Download the script from GitHub
-   curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/enable-git-integration.sh
-   chmod +x enable-git-integration.sh
-   
-   # Run as your user (not root)
-   ./enable-git-integration.sh
-   ```
-
-3. **Verify the setup**:
-   ```bash
-   # Check btrfs filesystems
-   sudo btrfs filesystem show
-   
-   # Check snapper configurations
-   sudo snapper list-configs
-   
-   # Check snapshots
-   sudo snapper -c root list
-   sudo snapper -c home list
-   
-   # Check hardware optimizations
-   display-optimizer.sh status
-   mouse-optimizer.sh status
-   memory-optimizer.sh status
-   ```
-
-### Development Environment Setup
-
-#### Install Development Tools
-```bash
-# Install development packages
-sudo pacman -S podman podman-compose buildah skopeo
-sudo pacman -S nodejs npm python python-pip rust go
-sudo pacman -S code pyenv python-poetry dotnet-sdk aspnet-runtime
-sudo pacman -S kitty alacritty  # Additional terminal options
-
-# Install Python development tools
-# pyenv for Python version management
-curl https://pyenv.run | bash
-
-# poetry for Python dependency management (already installed via pacman)
-# uv for ultra-fast Python package installer
-pip install --user uv
-
-# Install .NET development tools
-# dotnet-sdk already installed via pacman
-# Install additional .NET tools
-dotnet tool install --global dotnet-ef
-dotnet tool install --global dotnet-aspnet-codegenerator
-dotnet tool install --global dotnet-dump
-dotnet tool install --global dotnet-trace
-
-# Install additional programming languages
-install-additional-languages.sh all    # Haskell, Clojure, Zig
-
-# Install modern terminal emulators
-install-ghostty.sh install        # Install Ghostty terminal
-install-warp.sh install           # Install Warp terminal
-
-# Install AUR development tools
-yay -S visual-studio-code-bin
-yay -S jetbrains-toolbox           # Use toolbox to install IntelliJ IDEA Ultimate and Rider
-yay -S nvm
-
-# Enable and start Podman services
-sudo systemctl enable podman-auto-update.timer
-sudo usermod -aG wheel $USER
-
-# Setup development environment with Podman aliases
-setup-dev-caches.sh  # This now includes Docker→Podman aliases
-```
-
-#### Configure Development Environment
-```bash
-# Setup development directories
-mkdir -p ~/Projects/{personal,work,learning,experiments}
-mkdir -p ~/.config/{git,zsh,vim}
-mkdir -p ~/.local/bin
-
-# Configure Git with performance optimizations
-git config --global user.name "Peter Shrosbree"
-git config --global user.email "49728166-pcshrosbree@users.noreply.github.com"
-git config --global init.defaultBranch main
-git config --global init.templatedir /usr/local/share/git-templates
-git config --global --add include.path ~/.gitconfig-performance
-
-# Clone the arch-partitions repository for reference
-git clone https://github.com/pcshrosbree/arch-partitions.git ~/Projects/personal/arch-partitions
-
-# Setup optimized development caches and Podman aliases
-setup-dev-caches.sh
-
-#### Python Development Workflows
-```bash
-# Modern Python development with optimized tools
-# All caches use high-speed NVMe storage for maximum performance
-
-# pyenv for Python version management
-pyenv install 3.12.0 3.11.7 3.10.13      # Install multiple Python versions
-pyenv local 3.12.0                        # Set project-specific version
-
-# poetry for dependency management (optimized cache)
-poetry new my-python-project
-cd my-python-project
-poetry add fastapi uvicorn                # Fast package installation via cache
-poetry install                            # Install dependencies with cache optimization
-
-# uv for ultra-fast package operations
-uv pip install requests                   # Lightning-fast package installation
-uv pip sync requirements.txt              # Sync packages at high speed
-
-# Combined workflow with containers
-docker run --rm -it \
-  -v ~/.pyenv:/root/.pyenv \
-  -v ~/.cache/pypoetry:/root/.cache/pypoetry \
-  -v ~/.cache/uv:/root/.cache/uv \
-  -v $(pwd):/workspace -w /workspace \
-  python:3.12
-
-#### Additional Programming Languages
-```bash
-# Comprehensive multi-language development environment
-# All languages optimized with dedicated high-speed cache storage
-
-# Haskell functional programming
-install-additional-languages.sh haskell
-
-# Haskell development workflow:
-ghc --version                              # Glasgow Haskell Compiler
-cabal update                               # Update package index
-stack new my-haskell-project               # Create new Stack project
-stack build                               # Build with cached dependencies
-
-# Advanced Haskell tools:
-# - GHCup: Haskell toolchain manager
-# - Stack: Build tool with dependency management
-# - Cabal: Package manager and build system
-# - HLS: Haskell Language Server for IDE integration
-
-# Clojure functional programming
-install-additional-languages.sh clojure
-
-# Clojure development workflow:
-clj -version                               # Clojure CLI
-lein new app my-clojure-app               # Create new Leiningen project
-lein repl                                 # Start REPL with cached dependencies
-
-# Clojure tools:
-# - Clojure CLI: Official command-line tools
-# - Leiningen: Popular build automation tool
-# - Boot: Alternative build tool
-# - Java integration for JVM ecosystem
-
-# Zig systems programming
-install-additional-languages.sh zig
-
-# Zig development workflow:
-zig version                               # Zig compiler version
-zig init-exe                             # Create new executable project
-zig build                                 # Build with optimized cache
-
-# Zig features:
-# - Modern systems programming language
-# - Compile-time code execution
-# - Manual memory management with safety
-# - C interoperability without overhead
-# - ZLS: Zig Language Server for IDE support
-
-# Install all languages at once
-install-additional-languages.sh all       # Haskell + Clojure + Zig
-```
-
-#### Font Features for Development
-```bash
-# Nerd Font symbols enhance development experience:
-# - Git status indicators in terminal
-# - File type icons in file managers
-# - Enhanced prompt symbols
-# - IDE symbol integration
-
-# MonoLisa premium features:
-# - Designed specifically for programming
-# - Excellent readability at small sizes
-# - Optimized character spacing
-# - Professional ligatures for code
-
-# JetBrains IDEs for comprehensive development
-# IntelliJ IDEA Ultimate:
-# - Full Python support with Professional features
-# - Java/Kotlin enterprise development
-# - Haskell plugin support for functional programming
-# - Database tools integration
-# - Advanced debugging and profiling
-
-# JetBrains Rider:
-# - Complete .NET development environment
-# - ASP.NET Core and Blazor support
-# - Entity Framework integration
-# - Advanced .NET debugging and profiling
-# - Docker and container development
-
-#### Multi-Language Development Containers
-```bash
-# Container development with all language environments
-# All containers include optimized caches for fast package operations
-
-# Development containers with cache persistence:
-dev-python     # Python with pyenv, poetry, uv
-dev-dotnet     # .NET SDK with NuGet and tools
-dev-node       # Node.js with npm optimization
-dev-rust       # Rust with Cargo optimization
-dev-golang     # Go with module cache
-dev-haskell    # Haskell with GHC and Stack
-dev-clojure    # Clojure with JVM and Leiningen
-dev-zig        # Zig with compiler cache
-
-# Multi-language container with all tools
-podman run --rm -it \
-  -v ~/.local/share/fonts:/root/.local/share/fonts \
-  -v ~/.pyenv:/root/.pyenv \
-  -v ~/.ghcup:/root/.ghcup \
-  -v ~/.cache/zig:/root/.cache/zig \
-  -v ~/.m2:/root/.m2 \
-  -v $(pwd):/workspace -w /workspace \
-  ubuntu:latest
-```
-
-# Activate development environment
-source ~/.podman-aliases  # Docker compatibility aliases
-source ~/.build-env       # Memory-optimized build environment
-
-# Setup shell (if using zsh)
-sudo pacman -S zsh oh-my-zsh-git
-chsh -s /bin/zsh
-```
-
-## Arch Linux Installation
 
 ### Step 1: Boot Arch Linux Installation Media
 
@@ -479,14 +246,11 @@ chsh -s /bin/zsh
 
 #### archinstall Configuration Guide
 
-**Language**:
-- Select your preferred language (e.g., "English")
+**Language**: Select your preferred language (e.g., "English")
 
-**Mirrors**:
-- Choose "Automatic" or select your region for faster downloads
+**Mirrors**: Choose "Automatic" or select your region for faster downloads
 
-**Locales**:
-- Select your locale (e.g., "en_US.UTF-8")
+**Locales**: Select your locale (e.g., "en_US.UTF-8")
 
 **Disk configuration**:
 - Choose "Manual partitioning"
@@ -499,58 +263,39 @@ chsh -s /bin/zsh
   - `/dev/nvme1n1p1` → `/home` (btrfs, existing)
   - `/dev/sda1` → `/mnt/bulk` (btrfs, existing)
 
-**Disk encryption**:
-- Select "No encryption" (we're using btrfs without encryption)
+**Disk encryption**: Select "No encryption" (we're using btrfs without encryption)
 
-**Bootloader**:
-- Select "Grub" (recommended for btrfs)
+**Bootloader**: Select "Grub" (recommended for btrfs)
 
-**Swap**:
-- Select "No swap" (we have 256GB RAM)
+**Swap**: Select "No swap" (we have 256GB RAM)
 
-**Hostname**:
-- Enter your desired hostname (e.g., "dev-workstation")
+**Hostname**: Enter your desired hostname (e.g., "dev-workstation")
 
-**Root password**:
-- Set a strong root password
+**Root password**: Set a strong root password
 
-**User account**:
-- Create your user account
-- Add user to groups: wheel, audio, video, optical, storage
+**User account**: Create your user account and add user to groups: wheel, audio, video, optical, storage
 
-**Profile**:
-- Select "Desktop" → "None" (we'll configure desktop later)
+**Profile**: Select "Desktop" → "None" (we'll configure desktop later)
 
-**Audio**:
-- Select "Pipewire" (modern audio system)
+**Audio**: Select "Pipewire" (modern audio system)
 
-**Kernel**:
-- Select "linux" (stable kernel)
+**Kernel**: Select "linux" (stable kernel)
 
 **Additional packages**:
-- Add essential packages:
-  ```
-  git vim neovim tmux zsh fish btop htop curl wget firefox
-  base-devel btrfs-progs snapper grub-btrfs
-  ```
+```
+git vim neovim tmux zsh fish btop htop curl wget firefox
+base-devel btrfs-progs snapper grub-btrfs
+```
 
-**Network configuration**:
-- Select "NetworkManager" (easiest for desktop)
+**Network configuration**: Select "NetworkManager" (easiest for desktop)
 
-**Timezone**:
-- Select your timezone
+**Timezone**: Select your timezone
 
-**NTP**:
-- Select "Yes" (automatic time sync)
+**NTP**: Select "Yes" (automatic time sync)
 
-3. **Start installation**:
-   - Review all settings
-   - Confirm installation
-   - Wait for installation to complete
+3. **Start installation**: Review all settings, confirm installation, and wait for completion
 
-4. **Post-installation**:
-   - When prompted, choose "No" to chroot
-   - Choose "Yes" to reboot
+4. **Post-installation**: When prompted, choose "No" to chroot and "Yes" to reboot
 
 ### Step 4: First Boot Configuration
 
@@ -576,6 +321,50 @@ chsh -s /bin/zsh
    git clone https://aur.archlinux.org/yay.git
    cd yay
    makepkg -si
+   ```
+
+## Post-Installation Setup
+
+### Complete Storage and Snapshot Configuration
+
+After successfully installing Arch Linux and configuring your desktop environment:
+
+1. **Download and run the snapshot setup script**:
+   ```bash
+   # Download the script from GitHub
+   curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/setup-development-environment.sh
+   chmod +x setup-development-environment.sh
+   
+   # Run as root
+   sudo ./setup-development-environment.sh
+   ```
+
+2. **Enable Git integration** (optional):
+   ```bash
+   # Download the script from GitHub
+   curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/enable-git-integration.sh
+   chmod +x enable-git-integration.sh
+   
+   # Run as your user (not root)
+   ./enable-git-integration.sh
+   ```
+
+3. **Verify the setup**:
+   ```bash
+   # Check btrfs filesystems
+   sudo btrfs filesystem show
+   
+   # Check snapper configurations
+   sudo snapper list-configs
+   
+   # Check snapshots
+   sudo snapper -c root list
+   sudo snapper -c home list
+   
+   # Check hardware optimizations
+   display-optimizer.sh status
+   mouse-optimizer.sh status
+   memory-optimizer.sh status
    ```
 
 ## Desktop Environment Setup
@@ -655,15 +444,7 @@ env = WLR_NO_HARDWARE_CURSORS,1
 # Input configuration
 input {
     kb_layout = us
-    kb_variant =
-    kb_model =
-    kb_options =
-    kb_rules =
-
     follow_mouse = 1
-    touchpad {
-        natural_scroll = no
-    }
     sensitivity = 0
 }
 
@@ -678,40 +459,6 @@ general {
     allow_tearing = false
 }
 
-# Decoration
-decoration {
-    rounding = 10
-    
-    blur {
-        enabled = true
-        size = 3
-        passes = 1
-    }
-    
-    drop_shadow = yes
-    shadow_range = 4
-    shadow_render_power = 3
-    col.shadow = rgba(1a1a1aee)
-}
-
-# Animations
-animations {
-    enabled = yes
-    bezier = myBezier, 0.05, 0.9, 0.1, 1.05
-    animation = windows, 1, 7, myBezier
-    animation = windowsOut, 1, 7, default, popin 80%
-    animation = border, 1, 10, default
-    animation = borderangle, 1, 8, default
-    animation = fade, 1, 7, default
-    animation = workspaces, 1, 6, default
-}
-
-# Layout
-dwindle {
-    pseudotile = yes
-    preserve_split = yes
-}
-
 # Key bindings
 bind = SUPER, Return, exec, kitty
 bind = SUPER, Q, killactive,
@@ -719,107 +466,15 @@ bind = SUPER, M, exit,
 bind = SUPER, E, exec, thunar
 bind = SUPER, V, togglefloating,
 bind = SUPER, R, exec, wofi --show drun
-bind = SUPER, P, pseudo,
-bind = SUPER, J, togglesplit,
-
-# Move focus with mainMod + arrow keys
-bind = SUPER, left, movefocus, l
-bind = SUPER, right, movefocus, r
-bind = SUPER, up, movefocus, u
-bind = SUPER, down, movefocus, d
 
 # Switch workspaces
 bind = SUPER, 1, workspace, 1
 bind = SUPER, 2, workspace, 2
-bind = SUPER, 3, workspace, 3
-bind = SUPER, 4, workspace, 4
-bind = SUPER, 5, workspace, 5
-bind = SUPER, 6, workspace, 6
-bind = SUPER, 7, workspace, 7
-bind = SUPER, 8, workspace, 8
-bind = SUPER, 9, workspace, 9
-bind = SUPER, 0, workspace, 10
-
-# Move windows to workspaces
-bind = SUPER SHIFT, 1, movetoworkspace, 1
-bind = SUPER SHIFT, 2, movetoworkspace, 2
-bind = SUPER SHIFT, 3, movetoworkspace, 3
-bind = SUPER SHIFT, 4, movetoworkspace, 4
-bind = SUPER SHIFT, 5, movetoworkspace, 5
-bind = SUPER SHIFT, 6, movetoworkspace, 6
-bind = SUPER SHIFT, 7, movetoworkspace, 7
-bind = SUPER SHIFT, 8, movetoworkspace, 8
-bind = SUPER SHIFT, 9, movetoworkspace, 9
-bind = SUPER SHIFT, 0, movetoworkspace, 10
-
-# Mouse bindings
-bindm = SUPER, mouse:272, movewindow
-bindm = SUPER, mouse:273, resizewindow
+# ... (additional bindings)
 
 # Autostart
 exec-once = waybar
 exec-once = dunst
-EOF
-
-# Configure Waybar
-mkdir -p ~/.config/waybar
-cat > ~/.config/waybar/config << 'EOF'
-{
-    "layer": "top",
-    "position": "top",
-    "height": 30,
-    "spacing": 4,
-    "modules-left": ["hyprland/workspaces", "hyprland/window"],
-    "modules-center": ["clock"],
-    "modules-right": ["network", "memory", "cpu", "temperature", "battery", "tray"],
-    
-    "hyprland/workspaces": {
-        "disable-scroll": true,
-        "all-outputs": true,
-        "format": "{name}: {icon}",
-        "format-icons": {
-            "urgent": "",
-            "focused": "",
-            "default": ""
-        }
-    },
-    
-    "clock": {
-        "format": "{:%Y-%m-%d %H:%M}",
-        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-        "format-alt": "{:%Y-%m-%d}"
-    },
-    
-    "cpu": {
-        "format": "{usage}% ",
-        "tooltip": false
-    },
-    
-    "memory": {
-        "format": "{}% "
-    },
-    
-    "temperature": {
-        "thermal-zone": 2,
-        "hwmon-path": "/sys/class/hwmon/hwmon2/temp1_input",
-        "critical-threshold": 80,
-        "format": "{temperatureC}°C {icon}",
-        "format-icons": ["", "", ""]
-    },
-    
-    "network": {
-        "format-wifi": "{essid} ({signalStrength}%) ",
-        "format-ethernet": "{ipaddr}/{cidr} ",
-        "tooltip-format": "{ifname} via {gwaddr} ",
-        "format-linked": "{ifname} (No IP) ",
-        "format-disconnected": "Disconnected ⚠",
-        "format-alt": "{ifname}: {ipaddr}/{cidr}"
-    },
-    
-    "tray": {
-        "spacing": 10
-    }
-}
 EOF
 
 # Reboot to start Hyprland
@@ -849,19 +504,168 @@ vkcube
 glxgears
 ```
 
-#### Gaming Performance (Optional)
+## Development Environment
+
+### Install Development Tools
 ```bash
-# Install gaming tools
-sudo pacman -S steam lutris wine
+# Install core development packages
+sudo pacman -S podman podman-compose buildah skopeo
+sudo pacman -S nodejs npm python python-pip rust go
+sudo pacman -S code pyenv python-poetry dotnet-sdk aspnet-runtime
+sudo pacman -S kitty alacritty  # Additional terminal options
+sudo pacman -S jdk-openjdk zig  # Java for Clojure, Zig compiler
 
-# Install additional graphics libraries
-sudo pacman -S lib32-mesa lib32-vulkan-radeon
+# Install Python development tools
+# pyenv for Python version management
+curl https://pyenv.run | bash
 
-# Enable multilib repository in /etc/pacman.conf
-sudo nano /etc/pacman.conf
-# Uncomment [multilib] section
+# poetry for Python dependency management (already installed via pacman)
+# uv for ultra-fast Python package installer
+pip install --user uv
 
-sudo pacman -Syu
+# Install .NET development tools
+# dotnet-sdk already installed via pacman
+# Install additional .NET tools
+dotnet tool install --global dotnet-ef
+dotnet tool install --global dotnet-aspnet-codegenerator
+dotnet tool install --global dotnet-dump
+dotnet tool install --global dotnet-trace
+
+# Install additional programming languages
+install-additional-languages.sh all    # Haskell, Clojure, Zig
+
+# Install modern terminal emulators
+install-ghostty.sh install        # Install Ghostty terminal
+install-warp.sh install           # Install Warp terminal
+
+# Install AUR development tools
+yay -S visual-studio-code-bin
+yay -S jetbrains-toolbox           # Use toolbox to install IntelliJ IDEA Ultimate and Rider
+yay -S nvm
+
+# Enable and start Podman services
+sudo systemctl enable podman-auto-update.timer
+sudo usermod -aG wheel $USER
+
+# Setup development environment with Podman aliases
+setup-dev-caches.sh  # This now includes Docker→Podman aliases
+```
+
+### Configure Development Environment
+```bash
+# Setup development directories
+mkdir -p ~/Projects/{personal,work,learning,experiments}
+mkdir -p ~/.config/{git,zsh,vim}
+mkdir -p ~/.local/bin
+
+# Configure Git with performance optimizations
+git config --global user.name "Peter Shrosbree"
+git config --global user.email "49728166-pcshrosbree@users.noreply.github.com"
+git config --global init.defaultBranch main
+git config --global init.templatedir /usr/local/share/git-templates
+git config --global --add include.path ~/.gitconfig-performance
+
+# Clone the arch-partitions repository for reference
+git clone https://github.com/pcshrosbree/arch-partitions.git ~/Projects/personal/arch-partitions
+
+# Setup optimized development caches and Podman aliases
+setup-dev-caches.sh
+
+# Activate development environment
+source ~/.podman-aliases  # Docker compatibility aliases
+source ~/.build-env       # Memory-optimized build environment
+
+# Setup shell (if using zsh)
+sudo pacman -S zsh oh-my-zsh-git
+chsh -s /bin/zsh
+```
+
+### Python Development Workflows
+```bash
+# Modern Python development with optimized tools
+# All caches use high-speed NVMe storage for maximum performance
+
+# pyenv for Python version management
+pyenv install 3.12.0 3.11.7 3.10.13      # Install multiple Python versions
+pyenv local 3.12.0                        # Set project-specific version
+
+# poetry for dependency management (optimized cache)
+poetry new my-python-project
+cd my-python-project
+poetry add fastapi uvicorn                # Fast package installation via cache
+poetry install                            # Install dependencies with cache optimization
+
+# uv for ultra-fast package operations
+uv pip install requests                   # Lightning-fast package installation
+uv pip sync requirements.txt              # Sync packages at high speed
+
+# Combined workflow with containers
+docker run --rm -it \
+  -v ~/.pyenv:/root/.pyenv \
+  -v ~/.cache/pypoetry:/root/.cache/pypoetry \
+  -v ~/.cache/uv:/root/.cache/uv \
+  -v $(pwd):/workspace -w /workspace \
+  python:3.12
+```
+
+### Additional Programming Languages
+```bash
+# Comprehensive multi-language development environment
+# All languages optimized with dedicated high-speed cache storage
+
+# Haskell functional programming
+install-additional-languages.sh haskell
+
+# Haskell development workflow:
+ghc --version                              # Glasgow Haskell Compiler
+cabal update                               # Update package index
+stack new my-haskell-project               # Create new Stack project
+stack build                               # Build with cached dependencies
+
+# Clojure functional programming
+install-additional-languages.sh clojure
+
+# Clojure development workflow:
+clj -version                               # Clojure CLI
+lein new app my-clojure-app               # Create new Leiningen project
+lein repl                                 # Start REPL with cached dependencies
+
+# Zig systems programming
+install-additional-languages.sh zig
+
+# Zig development workflow:
+zig version                               # Zig compiler version
+zig init-exe                             # Create new executable project
+zig build                                 # Build with optimized cache
+
+# Install all languages at once
+install-additional-languages.sh all       # Haskell + Clojure + Zig
+```
+
+### Multi-Language Development Containers
+```bash
+# Container development with all language environments
+# All containers include optimized caches for fast package operations
+
+# Development containers with cache persistence:
+dev-python     # Python with pyenv, poetry, uv
+dev-dotnet     # .NET SDK with NuGet and tools
+dev-node       # Node.js with npm optimization
+dev-rust       # Rust with Cargo optimization
+dev-golang     # Go with module cache
+dev-haskell    # Haskell with GHC and Stack
+dev-clojure    # Clojure with JVM and Leiningen
+dev-zig        # Zig with compiler cache
+
+# Multi-language container with all tools
+podman run --rm -it \
+  -v ~/.local/share/fonts:/root/.local/share/fonts \
+  -v ~/.pyenv:/root/.pyenv \
+  -v ~/.ghcup:/root/.ghcup \
+  -v ~/.cache/zig:/root/.cache/zig \
+  -v ~/.m2:/root/.m2 \
+  -v $(pwd):/workspace -w /workspace \
+  ubuntu:latest
 ```
 
 ## File System Organization
@@ -950,253 +754,6 @@ sudo pacman -Syu
 - Development datasets
 - Backup storage
 
-## Script Documentation
-
-### setup-storage.sh
-
-Creates the complete storage layout with partitions, filesystems, and subvolumes.
-
-**⚠️ WARNING: This script destroys all data on specified drives!**
-
-```bash
-# Configuration (modify these paths!)
-PRIMARY_NVME="/dev/nvme0n1"      # Your primary NVMe device
-SECONDARY_NVME="/dev/nvme1n1"    # Your secondary NVMe device
-BULK_SATA="/dev/sda"             # Your SATA SSD device
-
-# Run with root privileges
-sudo ./setup-storage.sh
-```
-
-**What it does**:
-- Creates GPT partition tables
-- Formats filesystems with labels
-- Creates btrfs subvolumes
-- Generates optimized `/etc/fstab`
-- Mounts everything at `/mnt/target`
-
-### setup-development-environment.sh
-
-Configures comprehensive development environment with snapshots, performance optimizations, and hardware tuning.
-
-```bash
-# Run after OS installation and desktop configuration
-sudo ./setup-development-environment.sh
-```
-
-**What it creates**:
-- Snapper configurations for root and home filesystems
-- Timeline snapshots (hourly/daily/weekly/monthly)
-- Development snapshot timer (every 30 minutes during work hours)
-- System performance optimizations (CPU, memory, NVMe, graphics)
-- Hardware-specific optimizations (DDR5-6000, triple 4K displays, MX Master 3S)
-- NVMe health monitoring (hourly checks)
-- Docker optimization configuration
-- Enhanced btrfs maintenance (weekly)
-- Development environment optimizations
-- Utility scripts: `dev-backup.sh`, `snapshot-monitor.sh`, `snapshot-restore.sh`
-- Hardware monitoring: `nvme-health-monitor.sh`, `display-optimizer.sh`, `mouse-optimizer.sh`
-- Development cache setup: `setup-dev-caches.sh`
-- Git integration hooks
-- Automatic cleanup services
-
-### enable-git-integration.sh
-
-Enables automatic snapshots for Git operations.
-
-```bash
-# Run as normal user (not root)
-./enable-git-integration.sh
-```
-
-**What it does**:
-- Enables global Git template directory
-- Applies hooks to existing repositories
-- Creates `git-snapshot` helper command
-- Tests the integration
-
-## Performance Optimizations
-
-### System-Level Optimizations
-
-#### CPU and Memory
-```bash
-# CPU governor set to 'performance' for consistent high performance
-# Memory settings optimized for 256GB RAM and high-speed storage
-vm.dirty_ratio = 15
-vm.dirty_background_ratio = 5
-vm.swappiness = 1
-```
-
-#### NVMe Storage Optimizations
-```bash
-# Maximum performance NVMe settings
-nvme_core.default_ps_max_latency_us=0  # Disable power saving
-ssd_spread                             # Enhanced wear leveling
-commit=120                             # Extended commit intervals
-```
-
-#### Memory and Development Optimizations
-```bash
-# DDR5-6000 specific optimizations
-vm.dirty_ratio = 20                    # Higher ratio for large memory
-vm.dirty_background_ratio = 10         # Increased background ratio
-vm.vfs_cache_pressure = 50             # Optimize VFS cache for development
-vm.min_free_kbytes = 1048576           # 1GB minimum free memory
-vm.nr_hugepages = 1024                 # 2GB huge pages for performance
-
-# Development tool memory limits optimized for 256GB
-export NODE_OPTIONS="--max-old-space-size=16384"    # 16GB for Node.js
-export JAVA_OPTS="-Xmx32g -Xms8g"                   # 32GB for JVM
-export MAVEN_OPTS="-Xmx32g -Xms8g -XX:+UseG1GC"    # Optimized Maven
-export GOMEMLIMIT="32GiB"                           # Go memory limit
-```
-
-#### RAMdisk for Ultra-Fast Builds
-```bash
-# Create 16GB RAMdisk for temporary build operations
-memory-optimizer.sh ramdisk 16G
-
-# Use RAMdisk for builds (automatically configured)
-export TMPDIR=/tmp/ramdisk
-cd ~/Projects/large-project && make -j$(nproc)  # Uses RAMdisk
-```
-
-### Development-Specific Optimizations
-
-#### Build Cache Strategy
-- **Node.js**: `~/.npm` → `/var/cache/node_modules` (nodatacow)
-- **Rust/Cargo**: `~/.cargo` → `/var/cache/cargo`
-- **Go modules**: `~/go` → `/var/cache/go`
-- **Maven/Gradle**: `~/.m2` → `/var/cache/maven`
-
-#### Container Optimizations
-```json
-{
-  "storage-driver": "btrfs",
-  "storage-opts": ["btrfs.min_space=1G"],
-  "log-driver": "journald",
-  "default-ulimits": {
-    "nofile": {"hard": 64000, "soft": 64000}
-  }
-}
-```
-
-### Monitoring and Maintenance
-
-#### Automated Health Checks
-- **NVMe health monitoring**: Hourly temperature and wear level checks
-- **Btrfs maintenance**: Weekly defragmentation and balancing
-- **Snapshot cleanup**: Daily automated cleanup
-- **Performance monitoring**: Real-time I/O and temperature tracking
-
-### Usage Patterns
-
-### Development Workflow
-
-#### Active Development
-```bash
-# Work on projects in /home/user/Projects/
-cd ~/Projects/my-project
-
-# Automatic snapshots happen:
-# - Every 30 minutes during work hours
-# - Before each Git commit
-# - Before rebases and branch switches
-```
-
-#### Project Organization
-```bash
-# Active projects
-~/Projects/
-├── client-project/         # Current client work
-├── personal-project/       # Personal development
-├── experiments/            # Proof of concepts
-└── learning/              # Educational projects
-
-# Configuration
-~/.config/
-├── vscode/                # VS Code settings
-├── git/                   # Git configuration
-└── zsh/                   # Shell configuration
-```
-
-#### Long-term Storage
-```bash
-# Archive completed projects
-mv ~/Projects/completed-project /mnt/bulk/archives/2024/
-
-# Store build artifacts
-cp -r build/release/ /mnt/bulk/builds/my-project-v1.0/
-
-# Container image cache
-docker save my-image:latest | gzip > /mnt/bulk/containers/my-image-latest.tar.gz
-```
-
-### Configuration Management
-
-#### System Configuration
-```bash
-# Store in /opt for system-wide tools
-sudo cp my-tool /opt/my-tool/
-
-# Store in /usr/local for custom builds
-sudo make install PREFIX=/usr/local
-```
-
-#### User Configuration
-```bash
-# Personal configurations
-~/.config/              # Application configs
-~/.local/bin/          # Personal scripts
-~/.local/share/        # Application data
-
-# Development environment
-~/.zshrc               # Shell configuration
-~/.gitconfig           # Git settings
-~/.vimrc               # Editor settings
-```
-
-### Container and VM Management
-
-#### Docker Storage
-```bash
-# Docker root is at /var/lib/docker (nodatacow for performance)
-# Store images in bulk storage for long-term
-docker save ubuntu:latest | gzip > /mnt/bulk/containers/ubuntu-latest.tar.gz
-
-# Load when needed
-gunzip -c /mnt/bulk/containers/ubuntu-latest.tar.gz | docker load
-```
-
-#### Virtual Machines
-```bash
-# VM storage is at /var/lib/libvirt (nodatacow for performance)
-# Archive unused VMs to bulk storage
-sudo mv /var/lib/libvirt/images/old-vm.qcow2 /mnt/bulk/archives/vms/
-```
-
-### Media and Assets
-
-#### Large Files
-```bash
-# Store media files in bulk storage
-/mnt/bulk/media/
-├── images/             # Design assets
-├── videos/             # Video content
-├── audio/              # Audio files
-└── datasets/           # Development datasets
-```
-
-#### Backup Strategy
-```bash
-# System backups
-/mnt/bulk/backup/
-├── system/             # System configuration backups
-├── databases/          # Database dumps
-└── projects/           # Project backups
-```
-
 ## Snapshot Management
 
 ### Automatic Snapshots
@@ -1274,7 +831,7 @@ git-snapshot diff 42
 git-snapshot restore 42 src/main.py config.json
 ```
 
-#### Repository Management
+### Repository Management
 
 #### Enable for New Repository
 ```bash
@@ -1299,6 +856,113 @@ chmod +x enable-git-integration.sh
 ```bash
 # Remove hooks
 rm .git/hooks/pre-commit .git/hooks/pre-rebase .git/hooks/post-checkout
+```
+
+## Usage Patterns
+
+### Development Workflow
+
+#### Active Development
+```bash
+# Work on projects in /home/user/Projects/
+cd ~/Projects/my-project
+
+# Automatic snapshots happen:
+# - Every 30 minutes during work hours
+# - Before each Git commit
+# - Before rebases and branch switches
+```
+
+#### Project Organization
+```bash
+# Active projects
+~/Projects/
+├── client-project/         # Current client work
+├── personal-project/       # Personal development
+├── experiments/            # Proof of concepts
+└── learning/              # Educational projects
+
+# Configuration
+~/.config/
+├── vscode/                # VS Code settings
+├── git/                   # Git configuration
+└── zsh/                   # Shell configuration
+```
+
+#### Long-term Storage
+```bash
+# Archive completed projects
+mv ~/Projects/completed-project /mnt/bulk/archives/2024/
+
+# Store build artifacts
+cp -r build/release/ /mnt/bulk/builds/my-project-v1.0/
+
+# Container image cache
+docker save my-image:latest | gzip > /mnt/bulk/containers/my-image-latest.tar.gz
+```
+
+### Configuration Management
+
+#### System Configuration
+```bash
+# Store in /opt for system-wide tools
+sudo cp my-tool /opt/my-tool/
+
+# Store in /usr/local for custom builds
+sudo make install PREFIX=/usr/local
+```
+
+#### User Configuration
+```bash
+# Personal configurations
+~/.config/              # Application configs
+~/.local/bin/          # Personal scripts
+~/.local/share/        # Application data
+
+# Development environment
+~/.zshrc               # Shell configuration
+~/.gitconfig           # Git settings
+~/.vimrc               # Editor settings
+```
+
+### Container and VM Management
+
+#### Container Storage
+```bash
+# Container root is at /var/lib/containers (nodatacow for performance)
+# Store images in bulk storage for long-term
+docker save ubuntu:latest | gzip > /mnt/bulk/containers/ubuntu-latest.tar.gz
+
+# Load when needed
+gunzip -c /mnt/bulk/containers/ubuntu-latest.tar.gz | docker load
+```
+
+#### Virtual Machines
+```bash
+# VM storage is at /var/lib/libvirt (nodatacow for performance)
+# Archive unused VMs to bulk storage
+sudo mv /var/lib/libvirt/images/old-vm.qcow2 /mnt/bulk/archives/vms/
+```
+
+### Media and Assets
+
+#### Large Files
+```bash
+# Store media files in bulk storage
+/mnt/bulk/media/
+├── images/             # Design assets
+├── videos/             # Video content
+├── audio/              # Audio files
+└── datasets/           # Development datasets
+```
+
+#### Backup Strategy
+```bash
+# System backups
+/mnt/bulk/backup/
+├── system/             # System configuration backups
+├── databases/          # Database dumps
+└── projects/           # Project backups
 ```
 
 ## Maintenance
@@ -1407,7 +1071,6 @@ journalctl -k | grep -E "(amdgpu|drm|display)"
 
 # Reset display configuration if needed
 display-optimizer.sh layout horizontal
-```
 
 # Verify GPU is in high performance mode
 cat /sys/class/drm/card0/device/power_dpm_force_performance_level  # Should be 'high'
@@ -1420,8 +1083,22 @@ watch -n 5 'sensors | grep -E "(amdgpu|radeon)" -A 5'
 
 # Check display refresh rates and configuration
 xrandr | grep -E "\*|connected"
+```
 
-# Check NVMe drive health and performance
+#### NVMe-Specific Issues
+```bash
+# Check NVMe drive health
+sudo nvme smart-log /dev/nvme0n1  # Samsung 9100 PRO
+sudo nvme smart-log /dev/nvme1n1  # TEAMGROUP Z540
+
+# Monitor drive temperatures under load
+watch -n 5 'nvme smart-log /dev/nvme0n1 | grep temperature; nvme smart-log /dev/nvme1n1 | grep temperature'
+
+# Check for power management issues
+cat /sys/block/nvme0n1/queue/scheduler  # Should show available schedulers
+cat /sys/class/nvme/nvme*/power/control  # Should be 'on' for max performance
+
+# Check NVMe health and performance
 nvme-health-monitor.sh
 
 # Monitor real-time performance
@@ -1449,18 +1126,8 @@ display-optimizer.sh monitor
 mouse-optimizer.sh status
 mouse-optimizer.sh monitor
 
-#### NVMe-Specific Issues
-```bash
-# Check NVMe drive health
-sudo nvme smart-log /dev/nvme0n1  # Samsung 9100 PRO
-sudo nvme smart-log /dev/nvme1n1  # TEAMGROUP Z540
-
-# Monitor drive temperatures under load
-watch -n 5 'nvme smart-log /dev/nvme0n1 | grep temperature; nvme smart-log /dev/nvme1n1 | grep temperature'
-
-# Check for power management issues
-cat /sys/block/nvme0n1/queue/scheduler  # Should show available schedulers
-cat /sys/class/nvme/nvme*/power/control  # Should be 'on' for max performance
+# Check memory performance
+memory-optimizer.sh benchmark
 ```
 
 #### Development Cache Issues
@@ -1581,22 +1248,85 @@ echo "test data" | btrfs-compress zstd:3
 echo "test data" | btrfs-compress zstd:6
 ```
 
----
+## Script Documentation
+
+### setup-storage.sh
+
+Creates the complete storage layout with partitions, filesystems, and subvolumes.
+
+**⚠️ WARNING: This script destroys all data on specified drives!**
+
+```bash
+# Configuration (modify these paths!)
+PRIMARY_NVME="/dev/nvme0n1"      # Your primary NVMe device
+SECONDARY_NVME="/dev/nvme1n1"    # Your secondary NVMe device
+BULK_SATA="/dev/sda"             # Your SATA SSD device
+
+# Run with root privileges
+sudo ./setup-storage.sh
+```
+
+**What it does**:
+- Creates GPT partition tables
+- Formats filesystems with labels
+- Creates btrfs subvolumes
+- Generates optimized `/etc/fstab`
+- Mounts everything at `/mnt/target`
+
+### setup-development-environment.sh
+
+Configures comprehensive development environment with snapshots, performance optimizations, and hardware tuning.
+
+```bash
+# Run after OS installation and desktop configuration
+sudo ./setup-development-environment.sh
+```
+
+**What it creates**:
+- Snapper configurations for root and home filesystems
+- Timeline snapshots (hourly/daily/weekly/monthly)
+- Development snapshot timer (every 30 minutes during work hours)
+- System performance optimizations (CPU, memory, NVMe, graphics)
+- Hardware-specific optimizations (DDR5-6000, triple 4K displays, MX Master 3S)
+- NVMe health monitoring (hourly checks)
+- Container optimization configuration
+- Enhanced btrfs maintenance (weekly)
+- Development environment optimizations
+- Utility scripts: `dev-backup.sh`, `snapshot-monitor.sh`, `snapshot-restore.sh`
+- Hardware monitoring: `nvme-health-monitor.sh`, `display-optimizer.sh`, `mouse-optimizer.sh`
+- Development cache setup: `setup-dev-caches.sh`
+- Git integration hooks
+- Automatic cleanup services
+
+### enable-git-integration.sh
+
+Enables automatic snapshots for Git operations.
+
+```bash
+# Run as normal user (not root)
+./enable-git-integration.sh
+```
+
+**What it does**:
+- Enables global Git template directory
+- Applies hooks to existing repositories
+- Creates `git-snapshot` helper command
+- Tests the integration
 
 ## Summary
 
 This storage architecture provides a robust, high-performance foundation for software development with automatic data protection, organized storage tiers, and development-optimized workflows. The three-tier approach ensures that frequently accessed data gets maximum performance while providing cost-effective bulk storage for archives and backups.
 
-**Key Performance Features:**
+### Key Performance Features
+
 - **Samsung SSD 9100 PRO**: 14,800/13,400 MB/s with 2.6M write IOPS for system operations
 - **TEAMGROUP T-Force Z540**: 12,400/11,800 MB/s with 1.5M write IOPS for development work
 - **Comprehensive optimization**: CPU, memory, NVMe, and filesystem tuning
 - **Intelligent caching**: Development tools use optimized storage locations
 - **Health monitoring**: Automated NVMe and system health tracking
 
-The automatic snapshot system provides safety nets for development work, while the Git integration seamlessly captures development milestones. The organized subvolume structure makes it easy to manage different types of data and optimize performance for specific use cases.
+### Performance Benefits
 
-**Performance Benefits:**
 - **Exceptional storage performance**: Samsung 9100 PRO with 2.6M write IOPS for system operations
 - **High-speed development storage**: TEAMGROUP Z540 with 1.5M write IOPS for active development
 - **DDR5-6000 memory optimization**: Full utilization of 256GB high-speed memory for builds and caches
@@ -1610,6 +1340,8 @@ The automatic snapshot system provides safety nets for development work, while t
 - **Multi-monitor workspace automation**: Automatic application positioning across displays
 - **Input device automation**: Mouse optimization applied automatically when connected
 - **Parallel processing optimization**: Full utilization of 24-core CPU with large memory buffers
+
+The automatic snapshot system provides safety nets for development work, while the Git integration seamlessly captures development milestones. The organized subvolume structure makes it easy to manage different types of data and optimize performance for specific use cases.
 
 ## Repository Information
 

@@ -41,15 +41,15 @@ check_snapshot_system() {
     log "Checking snapshot system availability..."
     
     if ! command -v snapper &> /dev/null; then
-        error "Snapper is not installed. Please run setup-snapshots.sh first."
+        error "Snapper is not installed. Please run setup-development-environment.sh first."
     fi
     
     if ! snapper list-configs | grep -q "home"; then
-        error "Snapper 'home' configuration not found. Please run setup-snapshots.sh first."
+        error "Snapper 'home' configuration not found. Please run setup-development-environment.sh first."
     fi
     
     if [[ ! -f "$SNAPSHOT_HOOK" ]]; then
-        error "Git snapshot hook not found at $SNAPSHOT_HOOK. Please run setup-snapshots.sh first."
+        error "Git snapshot hook not found at $SNAPSHOT_HOOK. Please run setup-development-environment.sh first."
     fi
     
     log "✓ Snapshot system is available"
@@ -80,7 +80,7 @@ enable_global_templates() {
     log "Enabling global Git template directory..."
     
     if [[ ! -d "$GIT_TEMPLATE_DIR" ]]; then
-        error "Git template directory not found at $GIT_TEMPLATE_DIR. Please run setup-snapshots.sh first."
+        error "Git template directory not found at $GIT_TEMPLATE_DIR. Please run setup-development-environment.sh first."
     fi
     
     # Set global Git template directory
