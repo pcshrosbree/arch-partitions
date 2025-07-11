@@ -3,7 +3,7 @@
 A comprehensive btrfs-based storage solution optimized for software development with automatic snapshots, performance optimization, and organized data management.
 
 **Repository**: https://github.com/pcshrosbree/arch-partitions  
-**Author**: Peter Shrosbree
+**Author**: pcshrosbree
 
 ## Table of Contents
 
@@ -43,7 +43,7 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 - **Input**: Logitech MX Master 3S with Logi Bolt USB Receiver
 - **Storage**: 
   - **Primary**: Samsung SSD 9100 PRO - 4TB NVMe (PCIe 5.0) - 14,800/13,400 MB/s, 2.2M/2.6M IOPS
-  - **Secondary**: TEAMGROUP T-Force Z540 - 4TB NVMe (PCIe 5.0) - 12,400/11,800 MB/s, 1.4M/1.5M IOPS
+  - **Secondary**: TEAMGROUP T-Force Z540 - 4TB NVMe (PCIe 4.0) - 12,400/11,800 MB/s, 1.4M/1.5M IOPS
   - **Bulk**: 8TB SATA SSD
 - **Network**: Intel X520-DA2 10Gb NIC (PCIe 5.0 x8)
 
@@ -51,13 +51,16 @@ All filesystems use btrfs with automatic snapshots, compression, and development
 
 ### Physical Layout
 
-| PRIMARY NVMe       | SEONDARY NVMe      | BULK SATA       |
-| ------------------ | ------------------ | --------------- |
-| PCIe 5.0 x4        | PCIe 5.0 x4        | SATA III SSD    |
-| Samsung 9100 PRO   | TEAMGROUP Z540     | SAMSUNG 870 QVO |
-| 14,800/13,400 MB/s | 12,400/11,800 MB/s | 530/560 MB/s    |
-| 2.2M/2.6M IOPS     | 1.4M/1.5M IOPS     |                 |
-| 4TB                | 4TB                | 8TB             |
+```
+┌─────────────────────┬─────────────────────┬─────────────────────┐
+│   PRIMARY NVMe      │   SECONDARY NVMe    │    BULK SATA       │
+│   (PCIe 5.0)        │   (PCIe 4.0)        │   (SATA SSD)        │
+│ Samsung 9100 PRO    │ TEAMGROUP Z540      │   ~500 MB/s         │
+│ 14,800/13,400 MB/s  │ 12,400/11,800 MB/s  │   8TB               │
+│ 2.2M/2.6M IOPS      │ 1.4M/1.5M IOPS      │                     │
+│   4TB               │   4TB               │                     │
+└─────────────────────┴─────────────────────┴─────────────────────┘
+```
 
 ### Logical Layout
 
@@ -131,7 +134,7 @@ vm.nr_hugepages = 1024                 # 2GB huge pages for performance
 # Development tool memory limits optimized for 256GB
 export NODE_OPTIONS="--max-old-space-size=16384"    # 16GB for Node.js
 export JAVA_OPTS="-Xmx32g -Xms8g"                   # 32GB for JVM
-export MAVEN_OPTS="-Xmx32g -Xms8g -XX:+UseG1GC"     # Optimized Maven
+export MAVEN_OPTS="-Xmx32g -Xms8g -XX:+UseG1GC"    # Optimized Maven
 export GOMEMLIMIT="32GiB"                           # Go memory limit
 ```
 
@@ -325,47 +328,103 @@ base-devel btrfs-progs snapper grub-btrfs
 
 ## Post-Installation Setup
 
-### Complete Storage and Snapshot Configuration
+### Automated Setup with Scripts
 
-After successfully installing Arch Linux and configuring your desktop environment:
+After successfully installing Arch Linux, use the provided scripts in sequence:
 
-1. **Download and run the snapshot setup script**:
-   ```bash
-   # Download the script from GitHub
-   curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/setup-development-environment.sh
-   chmod +x setup-development-environment.sh
-   
-   # Run as root
-   sudo ./setup-development-environment.sh
-   ```
+#### 1. Snapshot Management Setup
+```bash
+# Download and run the snapshot setup script
+curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/setup-snapshotting.sh
+chmod +x setup-snapshotting.sh
 
-2. **Enable Git integration** (optional):
-   ```bash
-   # Download the script from GitHub
-   curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/enable-git-integration.sh
-   chmod +x enable-git-integration.sh
-   
-   # Run as your user (not root)
-   ./enable-git-integration.sh
-   ```
+# Run as root
+sudo ./setup-snapshotting.sh
+```
 
-3. **Verify the setup**:
-   ```bash
-   # Check btrfs filesystems
-   sudo btrfs filesystem show
-   
-   # Check snapper configurations
-   sudo snapper list-configs
-   
-   # Check snapshots
-   sudo snapper -c root list
-   sudo snapper -c home list
-   
-   # Check hardware optimizations
-   display-optimizer.sh status
-   mouse-optimizer.sh status
-   memory-optimizer.sh status
-   ```
+**What it does:**
+- Configures snapper for root and home filesystems
+- Creates automatic timeline snapshots (hourly/daily/weekly/monthly)
+- Sets up development snapshot timer (every 30 minutes during work hours)
+- Creates backup, monitoring, and restore utility scripts
+- Enables automatic cleanup services
+
+#### 2. System Performance Optimizations
+```bash
+# Download and run the system optimization script
+curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/setup-system-optimizations.sh
+chmod +x setup-system-optimizations.sh
+
+# Run as root
+sudo ./setup-system-optimizations.sh
+```
+
+**What it does:**
+- Configures CPU performance governor and optimizations
+- Applies DDR5-6000 memory optimizations (256GB tuning)
+- Optimizes NVMe drives for maximum performance
+- Enables NVMe health monitoring (hourly checks)
+- Configures network optimizations for 10Gb NIC
+- Sets up btrfs maintenance services
+- Creates system monitoring utilities
+
+#### 3. Development Environment Setup
+```bash
+# Download and run the development environment script
+curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/setup-development-environment.sh
+chmod +x setup-development-environment.sh
+
+# Run as root
+sudo ./setup-development-environment.sh
+```
+
+**What it does:**
+- Installs comprehensive development packages
+- Creates development cache optimization scripts
+- Configures Git hooks for automatic snapshots
+- Optimizes VS Code settings for btrfs
+- Creates Python development setup utilities
+- Configures development workspace structure
+- Sets up Podman with Docker compatibility aliases
+
+#### 4. Git Integration (Optional)
+```bash
+# Download and run the Git integration script
+curl -O https://raw.githubusercontent.com/pcshrosbree/arch-partitions/main/enable-git-integration.sh
+chmod +x enable-git-integration.sh
+
+# Run as your user (not root)
+./enable-git-integration.sh
+```
+
+**What it does:**
+- Enables global Git template directory
+- Applies hooks to existing repositories
+- Creates `git-snapshot` utility commands
+- Configures Git performance optimizations
+- Tests the integration with a sample repository
+
+#### 5. Verify the Setup
+```bash
+# Check btrfs filesystems
+sudo btrfs filesystem show
+
+# Check snapper configurations
+sudo snapper list-configs
+
+# Check snapshots
+sudo snapper -c root list
+sudo snapper -c home list
+
+# Check system optimizations
+system-monitor.sh all
+
+# Check development cache setup (run as user)
+setup-dev-caches.sh
+
+# Test Git integration (run as user)
+git-snapshot status
+```
 
 ## Desktop Environment Setup
 
@@ -1250,7 +1309,9 @@ echo "test data" | btrfs-compress zstd:6
 
 ## Script Documentation
 
-### setup-storage.sh
+### Core Setup Scripts
+
+#### setup-storage.sh
 
 Creates the complete storage layout with partitions, filesystems, and subvolumes.
 
@@ -1273,32 +1334,60 @@ sudo ./setup-storage.sh
 - Generates optimized `/etc/fstab`
 - Mounts everything at `/mnt/target`
 
-### setup-development-environment.sh
+#### setup-snapshotting.sh
 
-Configures comprehensive development environment with snapshots, performance optimizations, and hardware tuning.
+Configures comprehensive btrfs snapshot management with snapper.
 
 ```bash
-# Run after OS installation and desktop configuration
-sudo ./setup-development-environment.sh
+# Run after OS installation
+sudo ./setup-snapshotting.sh
 ```
 
 **What it creates**:
 - Snapper configurations for root and home filesystems
 - Timeline snapshots (hourly/daily/weekly/monthly)
 - Development snapshot timer (every 30 minutes during work hours)
-- System performance optimizations (CPU, memory, NVMe, graphics)
-- Hardware-specific optimizations (DDR5-6000, triple 4K displays, MX Master 3S)
-- NVMe health monitoring (hourly checks)
-- Container optimization configuration
-- Enhanced btrfs maintenance (weekly)
-- Development environment optimizations
 - Utility scripts: `dev-backup.sh`, `snapshot-monitor.sh`, `snapshot-restore.sh`
-- Hardware monitoring: `nvme-health-monitor.sh`, `display-optimizer.sh`, `mouse-optimizer.sh`
-- Development cache setup: `setup-dev-caches.sh`
-- Git integration hooks
 - Automatic cleanup services
+- GRUB integration for snapshot booting (if available)
 
-### enable-git-integration.sh
+#### setup-system-optimizations.sh
+
+Configures hardware-specific performance optimizations.
+
+```bash
+# Run after OS installation and desktop configuration
+sudo ./setup-system-optimizations.sh
+```
+
+**What it creates**:
+- CPU performance optimizations (performance governor)
+- DDR5-6000 memory optimizations (256GB tuning)
+- NVMe performance optimizations
+- NVMe health monitoring (hourly checks)
+- Network optimizations for 10Gb NIC
+- Btrfs maintenance services
+- Utility scripts: `memory-optimizer.sh`, `nvme-optimizer.sh`, `system-monitor.sh`
+
+#### setup-development-environment.sh
+
+Installs and configures comprehensive development tools and environments.
+
+```bash
+# Run after system optimizations
+sudo ./setup-development-environment.sh
+```
+
+**What it creates**:
+- Development package installation
+- Development cache optimization (`setup-dev-caches.sh`)
+- Git integration hooks
+- VS Code optimizations for btrfs
+- Python development setup (`setup-python-dev.sh`)
+- Development workspace setup (`setup-dev-workspace.sh`)
+- Git snapshot utility (`git-snapshot`)
+
+#### enable-git-integration.sh
 
 Enables automatic snapshots for Git operations.
 
@@ -1310,8 +1399,29 @@ Enables automatic snapshots for Git operations.
 **What it does**:
 - Enables global Git template directory
 - Applies hooks to existing repositories
-- Creates `git-snapshot` helper command
+- Creates user `git-snapshot` utility
+- Configures Git performance optimizations
 - Tests the integration
+
+### Utility Scripts Created
+
+#### Snapshot Management
+- **`dev-backup.sh`** - Create milestone and pre-deployment snapshots
+- **`snapshot-monitor.sh`** - Monitor snapshot usage and health
+- **`snapshot-restore.sh`** - Interactive snapshot restoration
+- **`git-snapshot`** - Git-specific snapshot management
+
+#### System Optimization
+- **`memory-optimizer.sh`** - DDR5-6000 memory optimization and RAMdisk
+- **`nvme-optimizer.sh`** - NVMe performance optimization and monitoring
+- **`nvme-health-monitor.sh`** - Automated NVMe health checking
+- **`system-monitor.sh`** - Comprehensive system monitoring
+
+#### Development Tools
+- **`setup-dev-caches.sh`** - Optimize development caches with Podman aliases
+- **`setup-python-dev.sh`** - Python development environment setup
+- **`setup-dev-workspace.sh`** - Create organized development workspace
+- **`git-snapshot-hook.sh`** - Git hooks for automatic snapshots
 
 ## Summary
 
