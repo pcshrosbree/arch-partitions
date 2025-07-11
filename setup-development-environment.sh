@@ -372,6 +372,19 @@ export DOTNET_GCHeapCount=4
 export DOTNET_GCConcurrent=1
 export DOTNET_GCServer=1
 
+# Haskell development optimizations
+export STACK_ROOT="/var/cache/haskell/$(whoami)/stack"
+export CABAL_DIR="/var/cache/haskell/$(whoami)/cabal"
+export GHCUP_INSTALL_BASE_PREFIX="/var/cache/haskell/$(whoami)"
+
+# Clojure development optimizations
+export LEIN_HOME="/var/cache/clojure/$(whoami)/lein"
+export CLJ_CONFIG="/var/cache/clojure/$(whoami)/clojure"
+
+# Zig development optimizations
+export ZIG_GLOBAL_CACHE_DIR="/var/cache/zig/$(whoami)"
+export ZIG_LOCAL_CACHE_DIR="/var/cache/zig/$(whoami)/local"
+
 # Container development with Podman
 export CONTAINER_RUNTIME="podman"
 export BUILDAH_FORMAT="docker"
@@ -389,6 +402,9 @@ echo "  - Node.js memory: 16GB"
 echo "  - JVM memory: 32GB"
 echo "  - Python tools: pyenv, poetry, uv (optimized caches)"
 echo "  - .NET tools: dotnet, nuget (optimized caches)"
+echo "  - Haskell tools: ghc, stack, cabal (optimized caches)"
+echo "  - Clojure tools: lein, clj (optimized caches)"
+echo "  - Zig compiler: zig (optimized cache)"
 echo "  - Container runtime: ${CONTAINER_RUNTIME}"
 echo "  - Temp directory: ${TMPDIR:-/tmp}"
 BUILDEOF
@@ -428,6 +444,20 @@ setup_cache_links "uv" "$USER_HOME/.cache/uv"
 # .NET development caches
 setup_cache_links "dotnet" "$USER_HOME/.dotnet"
 setup_cache_links "dotnet" "$USER_HOME/.nuget/packages"
+
+# Haskell development caches
+setup_cache_links "haskell" "$USER_HOME/.stack"
+setup_cache_links "haskell" "$USER_HOME/.cabal"
+setup_cache_links "haskell" "$USER_HOME/.ghcup"
+
+# Clojure development caches
+setup_cache_links "clojure" "$USER_HOME/.m2/repository"
+setup_cache_links "clojure" "$USER_HOME/.lein"
+setup_cache_links "clojure" "$USER_HOME/.clojure"
+
+# Zig development caches
+setup_cache_links "zig" "$USER_HOME/.cache/zig"
+setup_cache_links "zig" "$USER_HOME/zig-cache"
 
 # Setup Podman aliases
 setup_podman_aliases
@@ -1201,12 +1231,16 @@ show_summary() {
     echo "✓ NVMe health monitoring enabled (hourly checks)"
     echo "✓ Development font installation script created"
     echo "✓ Ghostty terminal installation script created"
+    echo "✓ Additional programming languages installation script created"
+    echo "✓ Warp terminal installation script created"
     echo "✓ Podman optimization configuration created"
     echo "✓ Btrfs maintenance service enabled (weekly)"
     echo "✓ Development environment optimizations created"
     echo "✓ Backup script created: /usr/local/bin/dev-backup.sh"
     echo "✓ Monitoring script created: /usr/local/bin/snapshot-monitor.sh"
     echo "✓ NVMe health monitor: /usr/local/bin/nvme-health-monitor.sh"
+    echo "✓ Warp installation script: /usr/local/bin/install-warp.sh"
+    echo "✓ Additional languages script: /usr/local/bin/install-additional-languages.sh"
     echo "✓ Ghostty installation script: /usr/local/bin/install-ghostty.sh"
     echo "✓ Font installation script: /usr/local/bin/install-dev-fonts.sh"
     echo "✓ Mouse optimization script: /usr/local/bin/mouse-optimizer.sh"
@@ -1222,7 +1256,12 @@ show_summary() {
     echo "• Create pre-deploy snapshot: dev-backup.sh predeploy myapp v1.2.3"
     echo "• List all snapshots: dev-backup.sh list"
     echo "• Monitor snapshot usage: snapshot-monitor.sh status"
-    echo "• Install Ghostty terminal: install-ghostty.sh install"
+    echo "• Install Warp terminal: install-warp.sh install"
+    echo "• Configure Warp only: install-warp.sh configure"
+    echo "• Install additional languages: install-additional-languages.sh all"
+    echo "• Install Haskell only: install-additional-languages.sh haskell"
+    echo "• Install Clojure only: install-additional-languages.sh clojure"
+    echo "• Install Zig only: install-additional-languages.sh zig"
     echo "• Configure Ghostty only: install-ghostty.sh configure"
     echo "• Install development fonts: install-dev-fonts.sh install"
     echo "• List installed fonts: install-dev-fonts.sh list"
@@ -1278,11 +1317,23 @@ show_summary() {
     echo "• Optimized for triple 4K displays with enhanced performance"
     echo "• MonoLisa and Nerd Font integration with symbol support"
     echo "• Development-focused keybindings and shell integration"
-    echo "• Split panes and tab management for development workflows"
+    echo "=== Additional Programming Languages ==="
+    echo "• Haskell development environment (GHC, Cabal, Stack, HLS)"
+    echo "• Clojure development environment (CLI tools, Leiningen, Boot)"
+    echo "• Zig development environment (Zig compiler, ZLS language server)"
+    echo "• Optimized caches for all language tools and dependencies"
+    echo "=== Modern Terminal Features ==="
+    echo "• Warp terminal with AI-powered command suggestions"
+    echo "• Ghostty terminal with GPU acceleration and development optimizations"
+    echo "• Blocks-based interface for better command organization"
+    echo "• Intelligent auto-completion and workflow integration"
+    echo "• MonoLisa and Nerd Font integration across all terminals"
     echo ""
     echo "=== Post-Installation Tasks ==="
     echo "• Run 'grub-mkconfig -o /boot/grub/grub.cfg' to apply GRUB optimizations"
     echo "• Run 'setup-dev-caches.sh' as your user to optimize development caches"
+    echo "• Run 'install-warp.sh install' to install and configure Warp terminal"
+    echo "• Run 'install-additional-languages.sh all' to install Haskell, Clojure, and Zig"
     echo "• Run 'install-ghostty.sh install' to install and configure Ghostty terminal"
     echo "• Run 'install-dev-fonts.sh install' to install all development fonts"
     echo "• Run 'install-dev-fonts.sh monolisa' to install MonoLisa from USB"
@@ -1331,6 +1382,8 @@ main() {
     create_input_optimizations
     create_font_installation
     create_ghostty_installation
+    create_additional_languages
+    create_warp_installation
     create_podman_optimization
     create_btrfs_maintenance
     create_enhanced_monitoring

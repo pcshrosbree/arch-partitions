@@ -1,4 +1,24 @@
-#### Automated Health Checks
+#### Install Development Tools
+```bash
+# Install core development packages
+sudo pacman -S podman podman-compose buildah skopeo
+sudo pacman -S nodejs npm python python-pip rust go
+sudo pacman -S code pyenv python-poetry dotnet-sdk aspnet-runtime
+sudo pacman -S kitty alacritty  # Additional terminal options
+sudo pacman -S jdk-openjdk zig  # Java for Clojure, Zig compiler
+
+# Install Python development tools
+# pyenv for Python version management
+curl https://pyenv.run | bash
+
+# poetry for Python dependency management (already installed via pacman)
+# uv for ultra-fast Python package installer
+pip install --user uv
+
+# Install .NET development tools
+# dotnet-sdk already installed via pacman
+# Install additional .NET tools
+dotnet tool install#### Automated Health Checks
 - **NVMe health monitoring**: Hourly temperature and wear level checks
 - **Memory performance monitoring**: DDR5-6000 speed and stability verification
 - **GPU monitoring**: Temperature, VRAM usage, and performance tracking
@@ -214,8 +234,12 @@ dotnet tool install --global dotnet-aspnet-codegenerator
 dotnet tool install --global dotnet-dump
 dotnet tool install --global dotnet-trace
 
-# Install modern terminal emulator
+# Install additional programming languages
+install-additional-languages.sh all    # Haskell, Clojure, Zig
+
+# Install modern terminal emulators
 install-ghostty.sh install        # Install Ghostty terminal
+install-warp.sh install           # Install Warp terminal
 
 # Install AUR development tools
 yay -S visual-studio-code-bin
@@ -277,19 +301,58 @@ docker run --rm -it \
   -v $(pwd):/workspace -w /workspace \
   python:3.12
 
-# JetBrains IDEs for comprehensive development
-# IntelliJ IDEA Ultimate:
-# - Full Python support with Professional features
-# - Java/Kotlin enterprise development
-# - Database tools integration
-# - Advanced debugging and profiling
+#### Additional Programming Languages
+```bash
+# Comprehensive multi-language development environment
+# All languages optimized with dedicated high-speed cache storage
 
-# JetBrains Rider:
-# - Complete .NET development environment
-# - ASP.NET Core and Blazor support
-# - Entity Framework integration
-# - Advanced .NET debugging and profiling
-# - Docker and container development
+# Haskell functional programming
+install-additional-languages.sh haskell
+
+# Haskell development workflow:
+ghc --version                              # Glasgow Haskell Compiler
+cabal update                               # Update package index
+stack new my-haskell-project               # Create new Stack project
+stack build                               # Build with cached dependencies
+
+# Advanced Haskell tools:
+# - GHCup: Haskell toolchain manager
+# - Stack: Build tool with dependency management
+# - Cabal: Package manager and build system
+# - HLS: Haskell Language Server for IDE integration
+
+# Clojure functional programming
+install-additional-languages.sh clojure
+
+# Clojure development workflow:
+clj -version                               # Clojure CLI
+lein new app my-clojure-app               # Create new Leiningen project
+lein repl                                 # Start REPL with cached dependencies
+
+# Clojure tools:
+# - Clojure CLI: Official command-line tools
+# - Leiningen: Popular build automation tool
+# - Boot: Alternative build tool
+# - Java integration for JVM ecosystem
+
+# Zig systems programming
+install-additional-languages.sh zig
+
+# Zig development workflow:
+zig version                               # Zig compiler version
+zig init-exe                             # Create new executable project
+zig build                                 # Build with optimized cache
+
+# Zig features:
+# - Modern systems programming language
+# - Compile-time code execution
+# - Manual memory management with safety
+# - C interoperability without overhead
+# - ZLS: Zig Language Server for IDE support
+
+# Install all languages at once
+install-additional-languages.sh all       # Haskell + Clojure + Zig
+```
 
 #### Font Features for Development
 ```bash
@@ -305,23 +368,45 @@ docker run --rm -it \
 # - Optimized character spacing
 # - Professional ligatures for code
 
-# Container development with optimized development tools, fonts, and terminal
+# JetBrains IDEs for comprehensive development
+# IntelliJ IDEA Ultimate:
+# - Full Python support with Professional features
+# - Java/Kotlin enterprise development
+# - Haskell plugin support for functional programming
+# - Database tools integration
+# - Advanced debugging and profiling
+
+# JetBrains Rider:
+# - Complete .NET development environment
+# - ASP.NET Core and Blazor support
+# - Entity Framework integration
+# - Advanced .NET debugging and profiling
+# - Docker and container development
+
+#### Multi-Language Development Containers
+```bash
+# Container development with all language environments
+# All containers include optimized caches for fast package operations
+
+# Development containers with cache persistence:
+dev-python     # Python with pyenv, poetry, uv
+dev-dotnet     # .NET SDK with NuGet and tools
+dev-node       # Node.js with npm optimization
+dev-rust       # Rust with Cargo optimization
+dev-golang     # Go with module cache
+dev-haskell    # Haskell with GHC and Stack
+dev-clojure    # Clojure with JVM and Leiningen
+dev-zig        # Zig with compiler cache
+
+# Multi-language container with all tools
 podman run --rm -it \
   -v ~/.local/share/fonts:/root/.local/share/fonts \
   -v ~/.pyenv:/root/.pyenv \
-  -v ~/.cache/pypoetry:/root/.cache/pypoetry \
-  -v ~/.dotnet:/root/.dotnet \
-  -v ~/.nuget:/root/.nuget \
+  -v ~/.ghcup:/root/.ghcup \
+  -v ~/.cache/zig:/root/.cache/zig \
+  -v ~/.m2:/root/.m2 \
   -v $(pwd):/workspace -w /workspace \
-  python:3.12
-
-# .NET development container with full environment
-dev-dotnet                                # Quick .NET SDK environment
-
-# Terminal options for development:
-ghostty                                   # Modern GPU-accelerated terminal
-kitty                                     # Feature-rich terminal with ligatures
-alacritty                                 # Minimal GPU-accelerated terminal
+  ubuntu:latest
 ```
 
 # Activate development environment
@@ -828,7 +913,10 @@ sudo pacman -Syu
 ├── /var/cache/pyenv/       # Python version management cache
 ├── /var/cache/poetry/      # Python dependency management cache
 ├── /var/cache/uv/          # Ultra-fast Python package cache
-└── /var/cache/dotnet/      # .NET SDK, packages, and build cache
+├── /var/cache/dotnet/      # .NET SDK, packages, and build cache
+├── /var/cache/haskell/     # Haskell GHC, Stack, and Cabal cache
+├── /var/cache/clojure/     # Clojure dependencies and REPL cache
+└── /var/cache/zig/         # Zig compiler and build cache
 ```
 
 **Ideal for**:
