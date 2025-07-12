@@ -1,0 +1,9 @@
+NAME        FSTYPE FSVER LABEL UUID                                 FSAVAIL FSUSE% MOUNTPOINTS
+sda                                                                                
+nvme0n1                                                                            
+├─nvme0n1p1 vfat   FAT32       CE91-6563                             835.3M    18% /boot
+└─nvme0n1p2 btrfs              c010feec-6b31-4c28-9c09-6aac0297187a    3.6T     0% /var/cache/pacman/pkg
+                                                                                   /var/log
+                                                                                   /home
+                                                                                   /
+nvme1n1                                                                            

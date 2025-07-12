@@ -1,0 +1,6 @@
+crw------- 1 root root 240, 0 Jul 12 12:07 /dev/nvme0
+brw-rw---- 1 root disk 259, 0 Jul 12 12:07 /dev/nvme0n1
+brw-rw---- 1 root disk 259, 1 Jul 12 12:07 /dev/nvme0n1p1
+brw-rw---- 1 root disk 259, 2 Jul 12 12:07 /dev/nvme0n1p2
+crw------- 1 root root 240, 1 Jul 12 12:07 /dev/nvme1
+brw-rw---- 1 root disk 259, 3 Jul 12 12:07 /dev/nvme1n1

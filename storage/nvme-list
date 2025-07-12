@@ -1,0 +1,4 @@
+Node                  Generic               SN                   Model                                    Namespace  Usage                      Format           FW Rev  
+--------------------- --------------------- -------------------- ---------------------------------------- ---------- -------------------------- ---------------- --------
+/dev/nvme0n1          /dev/ng0n1            S7YANJ0Y404183M      Samsung SSD 9100 PRO 4TB                 0x1          4.68  GB /   4.00  TB    512   B +  0 B   0B2QNXH7
+/dev/nvme1n1          /dev/ng1n1            TPBF2401080040100096 T-FORCE TM8FF1004T                       0x1          4.00  TB /   4.00  TB    512   B +  0 B   EQFM22.3

@@ -1,0 +1,9 @@
+total 12
+drwx------ 1 peter peter 102 Jul 12 12:12 .
+drwxr-xr-x 1 root  root   10 Jul 12 11:45 ..
+-rw-r--r-- 1 peter peter  21 May  7 08:46 .bash_logout
+-rw-r--r-- 1 peter peter  57 May  7 08:46 .bash_profile
+-rw-r--r-- 1 peter peter 172 May  7 08:46 .bashrc
+drwxr-xr-x 1 peter peter  14 Jul 12 11:45 .config
+drwx------ 1 peter peter  10 Jul 12 12:07 .local
+drwxr-xr-x 1 peter peter 888 Jul 12 12:12 tuning
