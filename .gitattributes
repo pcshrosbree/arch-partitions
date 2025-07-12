@@ -1,0 +1,25 @@
+# Set the default behavior for all files
+* text=auto eol=lf
+
+# Ensure shell scripts always use LF
+*.sh text eol=lf
+
+# Ensure these file types always use LF
+*.md text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.xml text eol=lf
+
+# Binary files should not be modified
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary

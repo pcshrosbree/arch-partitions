@@ -1,0 +1,7 @@
+"git-delta", "git-lfs", "git-zsh-completion", "git-zsh-config", "github-cli", 
+"gitui", "lazygit", "neovim-lspconfig", "neovim-plugins", "vim-spell-en", 
+"bash-completion", "zsh-autocomplete", "zsh-autsuggestions", "zsh-completions", 
+"zsh-history-substring-search", "zsh-syntax-highlighting", "zellij", "xh", "fd", 
+"uutils-coreutils", "ripgrep", "ripgrep-all", "lazygit", "dua-cli", "bat", "bat-extras", 
+"eza", "yazi", "tokei", "wiki-tui", "just", "just-lsp", "kondo", "btrfs-heatmap", 
+"grub-theme-vimix"
