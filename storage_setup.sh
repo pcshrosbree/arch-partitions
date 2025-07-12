@@ -217,6 +217,7 @@ setup_mounts() {
     mkdir -p /mnt/target/var/cache/haskell
     mkdir -p /mnt/target/var/cache/clojure
     mkdir -p /mnt/target/var/cache/zig
+    mkdir -p /mnt/target/etc
     
     # Get UUIDs
     ROOT_UUID=$(blkid -s UUID -o value "${PRIMARY_NVME}p2")
@@ -265,20 +266,6 @@ setup_mounts() {
         "${SECONDARY_NVME}p1" /mnt/target/var/cache/go
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@maven_cache \
         "${SECONDARY_NVME}p1" /mnt/target/var/cache/maven
-    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@pyenv_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/pyenv
-    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@poetry_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/poetry
-    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@uv_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/uv
-    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@dotnet_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/dotnet
-    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@haskell_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/haskell
-    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@clojure_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/clojure
-    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@zig_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/zig
     
     # Bulk storage
     mount -o defaults,noatime,compress=zstd:6,space_cache=v2,ssd,discard=async \
@@ -314,13 +301,6 @@ UUID=$HOME_UUID /var/cache/node_modules btrfs defaults,noatime,space_cache=v2,ss
 UUID=$HOME_UUID /var/cache/cargo btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@cargo_cache 0 0
 UUID=$HOME_UUID /var/cache/go btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@go_cache 0 0
 UUID=$HOME_UUID /var/cache/maven btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@maven_cache 0 0
-UUID=$HOME_UUID /var/cache/pyenv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@pyenv_cache 0 0
-UUID=$HOME_UUID /var/cache/poetry btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@poetry_cache 0 0
-UUID=$HOME_UUID /var/cache/uv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@uv_cache 0 0
-UUID=$HOME_UUID /var/cache/dotnet btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@dotnet_cache 0 0
-UUID=$HOME_UUID /var/cache/haskell btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@haskell_cache 0 0
-UUID=$HOME_UUID /var/cache/clojure btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@clojure_cache 0 0
-UUID=$HOME_UUID /var/cache/zig btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@zig_cache 0 0
 
 # Bulk storage (BULK)
 UUID=$BULK_UUID /mnt/bulk btrfs defaults,noatime,compress=zstd:6,space_cache=v2,ssd,discard=async 0 2
@@ -336,7 +316,6 @@ EOF
     log "• Optimized filesystem creation settings"
     log "• Development cache subvolumes created"
     log "• Ready for high-performance development workloads"
-}
 }
 
 # Main execution
