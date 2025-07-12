@@ -1,4 +1,43 @@
-#!/bin/bash
+    # Generate fstab
+    log "Generating fstab..."
+    cat > /mnt/etc/fstab << EOF
+# /etc/fstab: static file system information.
+# <file system> <mount point> <type> <options> <dump> <pass>
+
+# Root filesystem (ROOT) - Samsung 9100 PRO with performance optimizations
+UUID=$ROOT_UUID / btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@ 0 1
+
+# EFI System Partition (EFI_SYSTEM)
+UUID=$EFI_UUID /boot/efi vfat defaults,noatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2
+
+# Root subvolumes (ROOT) - Samsung 9100 PRO
+UUID=$ROOT_UUID /tmp btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@tmp,nodatacow 0 0
+UUID=$ROOT_UUID /var/log btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@var_log,nodatacow 0 0
+UUID=$ROOT_UUID /var/cache btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@var_cache,nodatacow 0 0
+UUID=$ROOT_UUID /opt btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@opt 0 0
+UUID=$ROOT_UUID /usr/local btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@usr_local 0 0
+
+# Home filesystem (HOME) - TEAMGROUP Z540 with performance optimizations
+UUID=$HOME_UUID /home btrfs defaults,noatime,compress=zstd:3,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@home 0 2
+UUID=$HOME_UUID /var/lib/containers btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@containers,nodatacow 0 0
+UUID=$HOME_UUID /var/lib/libvirt btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@vms,nodatacow 0 0
+
+# Development cache mounts (HOME) - TEAMGROUP Z540
+UUID=$HOME_UUID /var/cache/builds btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@tmp_builds,nodatacow 0 0
+UUID=$HOME_UUID /var/cache/node_modules btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@node_modules,nodatacow 0 0
+UUID=$HOME_UUID /var/cache/cargo btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@cargo_cache 0 0
+UUID=$HOME_UUID /var/cache/go btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@go_cache 0 0
+UUID=$HOME_UUID /var/cache/maven btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@maven_cache 0 0
+UUID=$HOME_UUID /var/cache/pyenv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@pyenv_cache 0 0
+UUID=$HOME_UUID /var/cache/poetry btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@poetry_cache 0 0
+UUID=$HOME_UUID /var/cache/uv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@uv_cache 0 0
+UUID=$HOME_UUID /var/cache/dotnet btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@dotnet_cache 0 0
+UUID=$HOME_UUID /var/cache/haskell btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@haskell_cache 0 0
+UUID=$HOME_UUID /var/cache/clojure btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@clojure_cache 0 0
+UUID=$HOME_UUID /var/cache/zig btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@zig_cache 0 0
+
+# Bulk storage (BULK)
+UUID=$BULK_UUID /mnt/bulk btrfs defaults,noa#!/bin/bash
 
 # Development Workstation Storage Setup Script
 # Creates partitions, filesystems, and btrfs subvolumes for optimal development workflow
@@ -200,9 +239,9 @@ create_subvolumes() {
 setup_mounts() {
     log "Setting up mount points..."
     
-    # Create the main target directory
-    log "Creating main target directory: /mnt/target"
-    mkdir -p /mnt/target
+    # Create the main target directory at /mnt for archinstall compatibility
+    log "Creating main target directory: /mnt"
+    mkdir -p /mnt
     
     # Get UUIDs
     ROOT_UUID=$(blkid -s UUID -o value "${PRIMARY_NVME}p2")
@@ -214,155 +253,155 @@ setup_mounts() {
     log "Mounting filesystems with performance optimizations..."
     
     # Root with enhanced performance options
-    log "Creating mount point: /mnt/target (root)"
+    log "Creating mount point: /mnt (root)"
     mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@ \
-        "${PRIMARY_NVME}p2" /mnt/target
-    log "✓ Mounted root filesystem at /mnt/target"
+        "${PRIMARY_NVME}p2" /mnt
+    log "✓ Mounted root filesystem at /mnt"
     
     # Create and mount EFI
-    log "Creating mount point: /mnt/target/boot/efi"
-    mkdir -p /mnt/target/boot/efi
-    mount "${PRIMARY_NVME}p1" /mnt/target/boot/efi
-    log "✓ Mounted EFI partition at /mnt/target/boot/efi"
+    log "Creating mount point: /mnt/boot/efi"
+    mkdir -p /mnt/boot/efi
+    mount "${PRIMARY_NVME}p1" /mnt/boot/efi
+    log "✓ Mounted EFI partition at /mnt/boot/efi"
     
     # Create and mount other root subvolumes with optimized settings
-    log "Creating mount point: /mnt/target/tmp"
-    mkdir -p /mnt/target/tmp
+    log "Creating mount point: /mnt/tmp"
+    mkdir -p /mnt/tmp
     mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@tmp,nodatacow \
-        "${PRIMARY_NVME}p2" /mnt/target/tmp
-    log "✓ Mounted tmp subvolume at /mnt/target/tmp"
+        "${PRIMARY_NVME}p2" /mnt/tmp
+    log "✓ Mounted tmp subvolume at /mnt/tmp"
     
-    log "Creating mount point: /mnt/target/var/log"
-    mkdir -p /mnt/target/var/log
+    log "Creating mount point: /mnt/var/log"
+    mkdir -p /mnt/var/log
     mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@var_log,nodatacow \
-        "${PRIMARY_NVME}p2" /mnt/target/var/log
-    log "✓ Mounted var_log subvolume at /mnt/target/var/log"
+        "${PRIMARY_NVME}p2" /mnt/var/log
+    log "✓ Mounted var_log subvolume at /mnt/var/log"
     
-    log "Creating mount point: /mnt/target/var/cache"
-    mkdir -p /mnt/target/var/cache
+    log "Creating mount point: /mnt/var/cache"
+    mkdir -p /mnt/var/cache
     mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@var_cache,nodatacow \
-        "${PRIMARY_NVME}p2" /mnt/target/var/cache
-    log "✓ Mounted var_cache subvolume at /mnt/target/var/cache"
+        "${PRIMARY_NVME}p2" /mnt/var/cache
+    log "✓ Mounted var_cache subvolume at /mnt/var/cache"
     
-    log "Creating mount point: /mnt/target/opt"
-    mkdir -p /mnt/target/opt
+    log "Creating mount point: /mnt/opt"
+    mkdir -p /mnt/opt
     mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@opt \
-        "${PRIMARY_NVME}p2" /mnt/target/opt
-    log "✓ Mounted opt subvolume at /mnt/target/opt"
+        "${PRIMARY_NVME}p2" /mnt/opt
+    log "✓ Mounted opt subvolume at /mnt/opt"
     
-    log "Creating mount point: /mnt/target/usr/local"
-    mkdir -p /mnt/target/usr/local
+    log "Creating mount point: /mnt/usr/local"
+    mkdir -p /mnt/usr/local
     mount -o defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@usr_local \
-        "${PRIMARY_NVME}p2" /mnt/target/usr/local
-    log "✓ Mounted usr_local subvolume at /mnt/target/usr/local"
+        "${PRIMARY_NVME}p2" /mnt/usr/local
+    log "✓ Mounted usr_local subvolume at /mnt/usr/local"
     
     # Create and mount home filesystem with enhanced performance
-    log "Creating mount point: /mnt/target/home"
-    mkdir -p /mnt/target/home
+    log "Creating mount point: /mnt/home"
+    mkdir -p /mnt/home
     mount -o defaults,noatime,compress=zstd:3,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@home \
-        "${SECONDARY_NVME}p1" /mnt/target/home
-    log "✓ Mounted home subvolume at /mnt/target/home"
+        "${SECONDARY_NVME}p1" /mnt/home
+    log "✓ Mounted home subvolume at /mnt/home"
     
-    log "Creating mount point: /mnt/target/var/lib/containers"
-    mkdir -p /mnt/target/var/lib/containers
+    log "Creating mount point: /mnt/var/lib/containers"
+    mkdir -p /mnt/var/lib/containers
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@containers,nodatacow \
-        "${SECONDARY_NVME}p1" /mnt/target/var/lib/containers
-    log "✓ Mounted containers subvolume at /mnt/target/var/lib/containers"
+        "${SECONDARY_NVME}p1" /mnt/var/lib/containers
+    log "✓ Mounted containers subvolume at /mnt/var/lib/containers"
     
-    log "Creating mount point: /mnt/target/var/lib/libvirt"
-    mkdir -p /mnt/target/var/lib/libvirt
+    log "Creating mount point: /mnt/var/lib/libvirt"
+    mkdir -p /mnt/var/lib/libvirt
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@vms,nodatacow \
-        "${SECONDARY_NVME}p1" /mnt/target/var/lib/libvirt
-    log "✓ Mounted vms subvolume at /mnt/target/var/lib/libvirt"
+        "${SECONDARY_NVME}p1" /mnt/var/lib/libvirt
+    log "✓ Mounted vms subvolume at /mnt/var/lib/libvirt"
     
     # Create and mount development cache directories
-    log "Creating mount point: /mnt/target/var/cache/builds"
-    mkdir -p /mnt/target/var/cache/builds
+    log "Creating mount point: /mnt/var/cache/builds"
+    mkdir -p /mnt/var/cache/builds
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@tmp_builds,nodatacow \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/builds
-    log "✓ Mounted builds cache subvolume at /mnt/target/var/cache/builds"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/builds
+    log "✓ Mounted builds cache subvolume at /mnt/var/cache/builds"
     
-    log "Creating mount point: /mnt/target/var/cache/node_modules"
-    mkdir -p /mnt/target/var/cache/node_modules
+    log "Creating mount point: /mnt/var/cache/node_modules"
+    mkdir -p /mnt/var/cache/node_modules
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@node_modules,nodatacow \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/node_modules
-    log "✓ Mounted node_modules cache subvolume at /mnt/target/var/cache/node_modules"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/node_modules
+    log "✓ Mounted node_modules cache subvolume at /mnt/var/cache/node_modules"
     
-    log "Creating mount point: /mnt/target/var/cache/cargo"
-    mkdir -p /mnt/target/var/cache/cargo
+    log "Creating mount point: /mnt/var/cache/cargo"
+    mkdir -p /mnt/var/cache/cargo
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@cargo_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/cargo
-    log "✓ Mounted cargo cache subvolume at /mnt/target/var/cache/cargo"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/cargo
+    log "✓ Mounted cargo cache subvolume at /mnt/var/cache/cargo"
     
-    log "Creating mount point: /mnt/target/var/cache/go"
-    mkdir -p /mnt/target/var/cache/go
+    log "Creating mount point: /mnt/var/cache/go"
+    mkdir -p /mnt/var/cache/go
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@go_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/go
-    log "✓ Mounted go cache subvolume at /mnt/target/var/cache/go"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/go
+    log "✓ Mounted go cache subvolume at /mnt/var/cache/go"
     
-    log "Creating mount point: /mnt/target/var/cache/maven"
-    mkdir -p /mnt/target/var/cache/maven
+    log "Creating mount point: /mnt/var/cache/maven"
+    mkdir -p /mnt/var/cache/maven
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@maven_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/maven
-    log "✓ Mounted maven cache subvolume at /mnt/target/var/cache/maven"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/maven
+    log "✓ Mounted maven cache subvolume at /mnt/var/cache/maven"
     
-    log "Creating mount point: /mnt/target/var/cache/pyenv"
-    mkdir -p /mnt/target/var/cache/pyenv
+    log "Creating mount point: /mnt/var/cache/pyenv"
+    mkdir -p /mnt/var/cache/pyenv
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@pyenv_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/pyenv
-    log "✓ Mounted pyenv cache subvolume at /mnt/target/var/cache/pyenv"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/pyenv
+    log "✓ Mounted pyenv cache subvolume at /mnt/var/cache/pyenv"
     
-    log "Creating mount point: /mnt/target/var/cache/poetry"
-    mkdir -p /mnt/target/var/cache/poetry
+    log "Creating mount point: /mnt/var/cache/poetry"
+    mkdir -p /mnt/var/cache/poetry
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@poetry_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/poetry
-    log "✓ Mounted poetry cache subvolume at /mnt/target/var/cache/poetry"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/poetry
+    log "✓ Mounted poetry cache subvolume at /mnt/var/cache/poetry"
     
-    log "Creating mount point: /mnt/target/var/cache/uv"
-    mkdir -p /mnt/target/var/cache/uv
+    log "Creating mount point: /mnt/var/cache/uv"
+    mkdir -p /mnt/var/cache/uv
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@uv_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/uv
-    log "✓ Mounted uv cache subvolume at /mnt/target/var/cache/uv"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/uv
+    log "✓ Mounted uv cache subvolume at /mnt/var/cache/uv"
     
-    log "Creating mount point: /mnt/target/var/cache/dotnet"
-    mkdir -p /mnt/target/var/cache/dotnet
+    log "Creating mount point: /mnt/var/cache/dotnet"
+    mkdir -p /mnt/var/cache/dotnet
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@dotnet_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/dotnet
-    log "✓ Mounted dotnet cache subvolume at /mnt/target/var/cache/dotnet"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/dotnet
+    log "✓ Mounted dotnet cache subvolume at /mnt/var/cache/dotnet"
     
-    log "Creating mount point: /mnt/target/var/cache/haskell"
-    mkdir -p /mnt/target/var/cache/haskell
+    log "Creating mount point: /mnt/var/cache/haskell"
+    mkdir -p /mnt/var/cache/haskell
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@haskell_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/haskell
-    log "✓ Mounted haskell cache subvolume at /mnt/target/var/cache/haskell"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/haskell
+    log "✓ Mounted haskell cache subvolume at /mnt/var/cache/haskell"
     
-    log "Creating mount point: /mnt/target/var/cache/clojure"
-    mkdir -p /mnt/target/var/cache/clojure
+    log "Creating mount point: /mnt/var/cache/clojure"
+    mkdir -p /mnt/var/cache/clojure
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@clojure_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/clojure
-    log "✓ Mounted clojure cache subvolume at /mnt/target/var/cache/clojure"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/clojure
+    log "✓ Mounted clojure cache subvolume at /mnt/var/cache/clojure"
     
-    log "Creating mount point: /mnt/target/var/cache/zig"
-    mkdir -p /mnt/target/var/cache/zig
+    log "Creating mount point: /mnt/var/cache/zig"
+    mkdir -p /mnt/var/cache/zig
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@zig_cache \
-        "${SECONDARY_NVME}p1" /mnt/target/var/cache/zig
-    log "✓ Mounted zig cache subvolume at /mnt/target/var/cache/zig"
+        "${SECONDARY_NVME}p1" /mnt/var/cache/zig
+    log "✓ Mounted zig cache subvolume at /mnt/var/cache/zig"
     
     # Create and mount bulk storage
-    log "Creating mount point: /mnt/target/mnt/bulk"
-    mkdir -p /mnt/target/mnt/bulk
+    log "Creating mount point: /mnt/mnt/bulk"
+    mkdir -p /mnt/mnt/bulk
     mount -o defaults,noatime,compress=zstd:6,space_cache=v2,ssd,discard=async \
-        "${BULK_SATA}1" /mnt/target/mnt/bulk
-    log "✓ Mounted bulk storage at /mnt/target/mnt/bulk"
+        "${BULK_SATA}1" /mnt/mnt/bulk
+    log "✓ Mounted bulk storage at /mnt/mnt/bulk"
     
     # Create etc directory for fstab
-    log "Creating directory: /mnt/target/etc"
-    mkdir -p /mnt/target/etc
-    log "✓ Created /mnt/target/etc directory"
+    log "Creating directory: /mnt/etc"
+    mkdir -p /mnt/etc
+    log "✓ Created /mnt/etc directory"
     
     # Generate fstab
     log "Generating fstab..."
-    cat > /mnt/target/etc/fstab << EOF
+    cat > /mnt/etc/fstab << EOF
 # /etc/fstab: static file system information.
 # <file system> <mount point> <type> <options> <dump> <pass>
 
@@ -370,7 +409,7 @@ setup_mounts() {
 UUID=$ROOT_UUID / btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@ 0 1
 
 # EFI System Partition (EFI_SYSTEM)
-UUID=$EFI_UUID /boot/efi vfat defaults,noatime 0 2
+UUID=$EFI_UUID /boot/efi vfat defaults,noatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2
 
 # Root subvolumes (ROOT) - Samsung 9100 PRO
 UUID=$ROOT_UUID /tmp btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@tmp,nodatacow 0 0
@@ -404,14 +443,15 @@ UUID=$BULK_UUID /mnt/bulk btrfs defaults,noatime,compress=zstd:6,space_cache=v2,
 EOF
     
     log "Storage setup complete!"
-    log "Your filesystems are mounted at /mnt/target"
-    log "fstab has been generated at /mnt/target/etc/fstab"
+    log "Your filesystems are mounted at /mnt"
+    log "fstab has been generated at /mnt/etc/fstab"
     log ""
     log "Performance optimizations applied:"
     log "• Enhanced btrfs mount options (ssd_spread, commit=120)"
     log "• Optimized filesystem creation settings"
     log "• Development cache subvolumes created"
     log "• Ready for high-performance development workloads"
+    log "• Compatible with archinstall at /mnt mount point"
 }
 
 # Main execution
@@ -429,9 +469,10 @@ main() {
     
     log "✓ Storage setup completed successfully!"
     log "Next steps:"
-    log "1. Install your OS to /mnt/target"
-    log "2. Copy the generated fstab to your installed system"
-    log "3. Run the snapshot setup script after OS installation"
+    log "1. Install your OS using: archinstall"
+    log "2. Use 'Pre-mounted configuration' with mount point: /mnt"
+    log "3. The optimized fstab has been pre-generated"
+    log "4. All development cache subvolumes are ready"
 }
 
 # Run main function
