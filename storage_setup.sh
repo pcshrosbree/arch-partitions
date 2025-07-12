@@ -134,7 +134,7 @@ format_filesystems() {
     
     # Bulk SATA - Bulk btrfs with standard settings
     log "Creating bulk btrfs filesystem..."
-    mkfs.btrfs -f -L "BULK" "${BULK_SATA}p1"
+    mkfs.btrfs -f -L "BULK" "${BULK_SATA}1"
 }
 
 # Create btrfs subvolumes
@@ -172,12 +172,19 @@ create_subvolumes() {
     btrfs subvolume create /mnt/home/@cargo_cache
     btrfs subvolume create /mnt/home/@go_cache
     btrfs subvolume create /mnt/home/@maven_cache
+    btrfs subvolume create /mnt/home/@pyenv_cache
+    btrfs subvolume create /mnt/home/@poetry_cache
+    btrfs subvolume create /mnt/home/@uv_cache
+    btrfs subvolume create /mnt/home/@dotnet_cache
+    btrfs subvolume create /mnt/home/@haskell_cache
+    btrfs subvolume create /mnt/home/@clojure_cache
+    btrfs subvolume create /mnt/home/@zig_cache
     
     umount /mnt/home
     
     # Mount bulk filesystem temporarily  
     mkdir -p /mnt/bulk
-    mount "${BULK_SATA}p1" /mnt/bulk
+    mount "${BULK_SATA}1" /mnt/bulk
     
     # Create bulk subvolumes
     log "Creating bulk storage subvolumes..."
@@ -222,7 +229,7 @@ setup_mounts() {
     # Get UUIDs
     ROOT_UUID=$(blkid -s UUID -o value "${PRIMARY_NVME}p2")
     HOME_UUID=$(blkid -s UUID -o value "${SECONDARY_NVME}p1")
-    BULK_UUID=$(blkid -s UUID -o value "${BULK_SATA}p1")
+    BULK_UUID=$(blkid -s UUID -o value "${BULK_SATA}1")
     EFI_UUID=$(blkid -s UUID -o value "${PRIMARY_NVME}p1")
     
     # Mount filesystems with optimized options
@@ -266,10 +273,24 @@ setup_mounts() {
         "${SECONDARY_NVME}p1" /mnt/target/var/cache/go
     mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@maven_cache \
         "${SECONDARY_NVME}p1" /mnt/target/var/cache/maven
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@pyenv_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/pyenv
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@poetry_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/poetry
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@uv_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/uv
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@dotnet_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/dotnet
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@haskell_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/haskell
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@clojure_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/clojure
+    mount -o defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@zig_cache \
+        "${SECONDARY_NVME}p1" /mnt/target/var/cache/zig
     
     # Bulk storage
     mount -o defaults,noatime,compress=zstd:6,space_cache=v2,ssd,discard=async \
-        "${BULK_SATA}p1" /mnt/target/mnt/bulk
+        "${BULK_SATA}1" /mnt/target/mnt/bulk
     
     # Generate fstab
     log "Generating fstab..."
@@ -301,6 +322,13 @@ UUID=$HOME_UUID /var/cache/node_modules btrfs defaults,noatime,space_cache=v2,ss
 UUID=$HOME_UUID /var/cache/cargo btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@cargo_cache 0 0
 UUID=$HOME_UUID /var/cache/go btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@go_cache 0 0
 UUID=$HOME_UUID /var/cache/maven btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@maven_cache 0 0
+UUID=$HOME_UUID /var/cache/pyenv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@pyenv_cache 0 0
+UUID=$HOME_UUID /var/cache/poetry btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@poetry_cache 0 0
+UUID=$HOME_UUID /var/cache/uv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@uv_cache 0 0
+UUID=$HOME_UUID /var/cache/dotnet btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@dotnet_cache 0 0
+UUID=$HOME_UUID /var/cache/haskell btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@haskell_cache 0 0
+UUID=$HOME_UUID /var/cache/clojure btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@clojure_cache 0 0
+UUID=$HOME_UUID /var/cache/zig btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@zig_cache 0 0
 
 # Bulk storage (BULK)
 UUID=$BULK_UUID /mnt/bulk btrfs defaults,noatime,compress=zstd:6,space_cache=v2,ssd,discard=async 0 2
