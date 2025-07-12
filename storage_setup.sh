@@ -1,43 +1,4 @@
-    # Generate fstab
-    log "Generating fstab..."
-    cat > /mnt/etc/fstab << EOF
-# /etc/fstab: static file system information.
-# <file system> <mount point> <type> <options> <dump> <pass>
-
-# Root filesystem (ROOT) - Samsung 9100 PRO with performance optimizations
-UUID=$ROOT_UUID / btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@ 0 1
-
-# EFI System Partition (EFI_SYSTEM)
-UUID=$EFI_UUID /boot/efi vfat defaults,noatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2
-
-# Root subvolumes (ROOT) - Samsung 9100 PRO
-UUID=$ROOT_UUID /tmp btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@tmp,nodatacow 0 0
-UUID=$ROOT_UUID /var/log btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@var_log,nodatacow 0 0
-UUID=$ROOT_UUID /var/cache btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@var_cache,nodatacow 0 0
-UUID=$ROOT_UUID /opt btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@opt 0 0
-UUID=$ROOT_UUID /usr/local btrfs defaults,noatime,compress=zstd:1,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@usr_local 0 0
-
-# Home filesystem (HOME) - TEAMGROUP Z540 with performance optimizations
-UUID=$HOME_UUID /home btrfs defaults,noatime,compress=zstd:3,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@home 0 2
-UUID=$HOME_UUID /var/lib/containers btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@containers,nodatacow 0 0
-UUID=$HOME_UUID /var/lib/libvirt btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,commit=120,subvol=@vms,nodatacow 0 0
-
-# Development cache mounts (HOME) - TEAMGROUP Z540
-UUID=$HOME_UUID /var/cache/builds btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@tmp_builds,nodatacow 0 0
-UUID=$HOME_UUID /var/cache/node_modules btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@node_modules,nodatacow 0 0
-UUID=$HOME_UUID /var/cache/cargo btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@cargo_cache 0 0
-UUID=$HOME_UUID /var/cache/go btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@go_cache 0 0
-UUID=$HOME_UUID /var/cache/maven btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@maven_cache 0 0
-UUID=$HOME_UUID /var/cache/pyenv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@pyenv_cache 0 0
-UUID=$HOME_UUID /var/cache/poetry btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@poetry_cache 0 0
-UUID=$HOME_UUID /var/cache/uv btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@uv_cache 0 0
-UUID=$HOME_UUID /var/cache/dotnet btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@dotnet_cache 0 0
-UUID=$HOME_UUID /var/cache/haskell btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@haskell_cache 0 0
-UUID=$HOME_UUID /var/cache/clojure btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@clojure_cache 0 0
-UUID=$HOME_UUID /var/cache/zig btrfs defaults,noatime,space_cache=v2,ssd,ssd_spread,discard=async,subvol=@zig_cache 0 0
-
-# Bulk storage (BULK)
-UUID=$BULK_UUID /mnt/bulk btrfs defaults,noa#!/bin/bash
+#!/bin/bash
 
 # Development Workstation Storage Setup Script
 # Creates partitions, filesystems, and btrfs subvolumes for optimal development workflow
