@@ -3,7 +3,8 @@
 # Validate Development Storage Design
 # Comprehensive validation script to ensure storage is configured as designed
 
-set -euo pipefail
+# Remove strict error handling that might cause premature exit
+set -eo pipefail
 
 # Expected device configuration
 PRIMARY_NVME="/dev/nvme0n1"      # PCIe 5 NVMe - Root + EFI
@@ -145,6 +146,7 @@ test_hardware_detection() {
     
     subheader "Block Device Detection"
     
+    echo "Debug: Testing primary NVMe: $PRIMARY_NVME"
     test_start
     if [[ -b "$PRIMARY_NVME" ]]; then
         pass "Primary NVMe detected: $PRIMARY_NVME"
@@ -152,6 +154,7 @@ test_hardware_detection() {
         fail "Primary NVMe not found: $PRIMARY_NVME"
     fi
     
+    echo "Debug: Testing secondary NVMe: $SECONDARY_NVME"
     test_start
     if [[ -b "$SECONDARY_NVME" ]]; then
         pass "Secondary NVMe detected: $SECONDARY_NVME"
@@ -159,6 +162,7 @@ test_hardware_detection() {
         fail "Secondary NVMe not found: $SECONDARY_NVME"
     fi
     
+    echo "Debug: Testing bulk SATA: $BULK_SATA"
     test_start
     if [[ -b "$BULK_SATA" ]]; then
         pass "Bulk SATA detected: $BULK_SATA"
@@ -168,6 +172,7 @@ test_hardware_detection() {
     
     subheader "Partition Detection"
     
+    echo "Debug: Testing EFI partition: ${PRIMARY_NVME}p1"
     test_start
     if [[ -b "${PRIMARY_NVME}p1" ]]; then
         pass "EFI partition detected: ${PRIMARY_NVME}p1"
@@ -175,6 +180,7 @@ test_hardware_detection() {
         fail "EFI partition not found: ${PRIMARY_NVME}p1"
     fi
     
+    echo "Debug: Testing root partition: ${PRIMARY_NVME}p2"
     test_start
     if [[ -b "${PRIMARY_NVME}p2" ]]; then
         pass "Root partition detected: ${PRIMARY_NVME}p2"
@@ -182,6 +188,7 @@ test_hardware_detection() {
         fail "Root partition not found: ${PRIMARY_NVME}p2"
     fi
     
+    echo "Debug: Testing home partition: ${SECONDARY_NVME}p1"
     test_start
     if [[ -b "${SECONDARY_NVME}p1" ]]; then
         pass "Home partition detected: ${SECONDARY_NVME}p1"
@@ -189,12 +196,15 @@ test_hardware_detection() {
         warn "Home partition not found: ${SECONDARY_NVME}p1 (optional)"
     fi
     
+    echo "Debug: Testing bulk partition: ${BULK_SATA}1"
     test_start
     if [[ -b "${BULK_SATA}1" ]]; then
         pass "Bulk partition detected: ${BULK_SATA}1"
     else
         warn "Bulk partition not found: ${BULK_SATA}1 (optional)"
     fi
+    
+    echo "Debug: Hardware detection completed"
 }
 
 # Test 2: Filesystem Types
