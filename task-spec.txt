@@ -1,0 +1,159 @@
+I am building a software development workstation
+
+
+The hardware is:
+
+CPU: AMD Ryzen 9950X
+RAM: 256 GB G.SKILL Flare X5 128GB (4 x 64GB) DDR5 6000 (PC5 48000) Model F5-6000J3444F64GX2-FX5 (CAS: CL34; 34-44-44-96)
+Motherboard: ASUS ROG Crosshair X870E Hero (AMD X870E AM5 ATX)
+Graphics card: PCIe x16 ASUS PRIME Radeon RX 9070 XT 16GB 256-Bit GDDR6 PCI Express 5.0 x16 RDNA 4 Graphics Card PRIME-RX9070XT-O16G in slot PCIEX16_1 (x16 Gen 5)
+Displays: 3 x Dell U4320Q UltraSharp 43 Inch 4K UHD Computer Monitor connected to the DisplayPort ports on the graphic card 
+Network card: Intel X520-DA2 in slot PCIEX16_2 (x8 Gen 5)
+Storage:
+   - Samsung SSD 9100 PRO (Max Sequential Read: up to 14,800 MB/s; Max Sequential Write: 13,400 MB/s; Max Random Read IOPS: up to 2.2M; Max Random Write IOPS: up to 2.6M) in M.2_1 (Gen 5 x4 from CPU)
+   - TEAMGROUP T-Force Z540 (Max Sequential Read: up to 12,400 MB/s; Max Sequential Write: 11,800 MB/s; Max Random Read IOPS: ~1.4M; Max Random Write IOPS: ~1.5M) in M.2_5 (Gen 4 x4 from chipset)
+   - Samsung SSD 870 QVO (Max Sequential Read: up to 560 MB/s; Max Sequential Write: 530 MB/s; Max Random Read IOPS: ~44,433; Max Random Write IOPS: ~20,507) in SATA6G_1
+Keyboard: Das Keyboard 6 Professional Backlit Wired Mechanical Keyboard – Tactile Cherry MX Brown Switches, Shine-Through Keycaps, 2-Port USB C Hub
+Mouse: Logitech MX Master 3S Wireless Mouse connected via USB LogiBolt
+Security: 
+   - Digital Persona 88003-001U.are.u 4500 fingerprint scanner
+   - Yubico - YubiKey 5 Nano
+Webcam: Logitech MX Brio Ultra HD 4K Collaboration and Streaming Webcam
+External storage: Seagate Expansion 22TB External Hard Drive HDD - USB 3.0
+Printer: Brother MFC-L3770CDW Multifunction Color Laser network printer and scanner at IP address 10.2.20.2
+
+Storage architecture:
+
+## Storage Architecture
+
+### Physical Layout
+
+```
+┌─────────────────────┬─────────────────────┬─────────────────────┐
+│   PRIMARY NVMe      │   SECONDARY NVMe    │    BULK SATA       │
+│   (PCIe 5.0)        │   (PCIe 4.0)        │   (SATA SSD)        │
+│ Samsung 9100 PRO    │ TEAMGROUP Z540      │   ~500 MB/s         │
+│ 14,800/13,400 MB/s  │ 12,400/11,800 MB/s  │   8TB               │
+│ 2.2M/2.6M IOPS      │ 1.4M/1.5M IOPS      │                     │
+│   4TB               │   4TB               │                     │
+└─────────────────────┴─────────────────────┴─────────────────────┘
+```
+
+### Logical Layout
+
+```
+/ (ROOT filesystem on Samsung 9100 PRO)
+├── /boot/efi (EFI_SYSTEM - FAT32)
+├── /tmp (@tmp subvolume, nodatacow)
+├── /var/log (@var_log subvolume, nodatacow)
+├── /var/cache (@var_cache subvolume, nodatacow)
+├── /opt (@opt subvolume)
+├── /usr/local (@usr_local subvolume)
+├── /home (HOME filesystem on TEAMGROUP Z540)
+│   ├── @home (user directories)
+│   ├── @containers (Container storage, nodatacow)
+│   ├── @vms (VM storage, nodatacow)
+│   ├── @tmp_builds (build cache, nodatacow)
+│   ├── @node_modules (Node.js cache, nodatacow)
+│   ├── @cargo_cache (Rust cache)
+│   ├── @go_cache (Go module cache)
+│   └── @maven_cache (Maven/Gradle cache)
+└── /mnt/bulk (BULK filesystem on SATA SSD)
+    ├── @archives (Long-term storage)
+    ├── @builds (Build artifacts)
+    ├── @containers (Container images)
+    └── @backup (Backup storage)
+```
+
+## Performance Optimizations
+
+### System-Level Optimizations
+
+| Component | Optimization | Benefit |
+|-----------|--------------|---------|
+| **Mount Options** | ssd_spread, commit=120 | Better wear leveling, reduced write frequency |
+| **NVMe Power** | default_ps_max_latency_us=0 | Maximum performance mode |
+| **CPU Governor** | performance | Consistent high performance |
+| **Memory** | vm.dirty_ratio=20, vm.swappiness=1, huge pages | Optimized for DDR5-6000 and large datasets |
+| **Development Tools** | Increased memory limits, parallel builds | Utilizes 256GB for faster compilation |
+| **Graphics** | amdgpu performance mode, memory/core OC | Optimized for triple 4K displays |
+| **Network** | 10Gb NIC optimizations | Enhanced network performance |
+| **Btrfs** | Enhanced compression, metadata optimization | Better performance and space efficiency |
+
+### Hardware-Specific Optimizations
+
+#### CPU and Memory
+```bash
+# CPU governor set to 'performance' for consistent high performance
+# Memory settings optimized for 256GB RAM and high-speed storage
+vm.dirty_ratio = 15
+vm.dirty_background_ratio = 5
+vm.swappiness = 1
+```
+
+#### NVMe Storage Optimizations
+```bash
+# Maximum performance NVMe settings
+nvme_core.default_ps_max_latency_us=0  # Disable power saving
+ssd_spread                             # Enhanced wear leveling
+commit=120                             # Extended commit intervals
+```
+
+#### Memory and Development Optimizations
+```bash
+# DDR5-6000 specific optimizations
+vm.dirty_ratio = 20                    # Higher ratio for large memory
+vm.dirty_background_ratio = 10         # Increased background ratio
+vm.vfs_cache_pressure = 50             # Optimize VFS cache for development
+vm.min_free_kbytes = 1048576           # 1GB minimum free memory
+vm.nr_hugepages = 1024                 # 2GB huge pages for performance
+
+# Development tool memory limits optimized for 256GB
+export NODE_OPTIONS="--max-old-space-size=16384"    # 16GB for Node.js
+export JAVA_OPTS="-Xmx32g -Xms8g"                   # 32GB for JVM
+export MAVEN_OPTS="-Xmx32g -Xms8g -XX:+UseG1GC"    # Optimized Maven
+export GOMEMLIMIT="32GiB"                           # Go memory limit
+```
+
+#### Input Device Optimizations
+```bash
+# Logitech MX Master 3S optimization for triple 4K displays
+# Automatic configuration when Logi Bolt receiver is connected
+
+# Mouse acceleration optimized for large display area (11,520 x 2,160)
+libinput Accel Speed 0.3                  # Balanced speed for precision and traversal
+libinput Natural Scrolling Enabled 1      # Natural scrolling (development preference)
+libinput Middle Emulation Enabled 0       # Disable accidental middle-click paste
+
+# Display-aware cursor movement
+xset m 2/1 4                              # Mouse acceleration: 2/1 multiplier, 4px threshold
+
+# Development gesture configuration
+# Thumb wheel: Workspace/window switching
+# Gesture button: Context-specific actions
+```
+
+#### Automated Health Checks
+- **NVMe health monitoring**: Hourly temperature and wear level checks
+- **Memory performance monitoring**: DDR5-6000 speed and stability verification
+- **GPU monitoring**: Temperature, VRAM usage, and performance tracking
+- **Display optimization**: Automatic GPU performance settings on boot
+- **Btrfs maintenance**: Weekly defragmentation and balancing
+- **Snapshot cleanup**: Daily automated cleanup
+- **Performance monitoring**: Real-time I/O, memory usage, and temperature tracking
+
+#### Manual Optimization Commands
+```bash
+# Check display configuration and GPU status
+display-optimizer.sh status
+
+# Check memory performance
+memory-optimizer.sh benchmark
+
+# RAMdisk for ultra-fast builds
+memory-optimizer.sh ramdisk 16G
+
+# Use RAMdisk for builds (automatically configured)
+export TMPDIR=/tmp/ramdisk
+cd ~/Projects/large-project && make -j$(nproc)  # Uses RAMdisk
+```

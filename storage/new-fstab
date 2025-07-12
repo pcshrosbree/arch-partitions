@@ -1,0 +1,18 @@
+# Samsung 9100 PRO - System drive with optimized options
+UUID=c010feec-6b31-4c28-9c09-6aac0297187a / btrfs rw,noatime,compress=zstd:1,ssd,discard=async,space_cache=v2,commit=120,subvol=/@ 0 0
+UUID=c010feec-6b31-4c28-9c09-6aac0297187a /home btrfs rw,noatime,compress=zstd:1,ssd,discard=async,space_cache=v2,commit=120,subvol=/@home 0 0
+UUID=CE91-6563 /boot vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2
+
+# T-Force Z540 - Performance critical
+UUID=<nvme1n1p1-uuid> /var/lib/containers btrfs rw,noatime,compress=zstd:1,ssd,discard=async,space_cache=v2,commit=120 0 0
+UUID=<nvme1n1p2-uuid> /tmp f2fs rw,noatime,discard,gc_merge,fastboot,inline_data,inline_dentry,flush_merge 0 0
+UUID=<nvme1n1p3-uuid> /var/cache/pacman/pkg btrfs rw,noatime,compress=zstd:1,ssd,discard=async,space_cache=v2 0 0
+UUID=<nvme1n1p4-uuid> /home/peter/builds btrfs rw,noatime,compress=zstd:1,ssd,discard=async,space_cache=v2,user_subvol_rm_allowed 0 0
+
+# Samsung 870 QVO - Mass storage
+UUID=<sda1-uuid> /var/log btrfs rw,noatime,compress=zstd:3,space_cache=v2,commit=600 0 0
+UUID=<sda2-uuid> none swap sw,pri=1 0 0
+UUID=<sda3-uuid> /home/peter/archives btrfs rw,noatime,compress=zstd:3,space_cache=v2,commit=600 0 0
+
+# RAM disk for ultra-fast builds
+tmpfs /home/peter/ramdisk tmpfs rw,noatime,size=32G,mode=1777 0 0
